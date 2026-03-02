@@ -2,9 +2,16 @@ import { Heart, CheckCircle } from 'lucide-react';
 import { Bourbon } from '../data';
 import ListCard from './ListCard';
 
-export default function ListsView({ wantToTry, tried, onSelect, bourbons }: any) {
-  const wantBourbons = wantToTry.map((id: string) => bourbons.find((b: Bourbon) => b.id === id)).filter(Boolean);
-  const triedBourbons = tried.map((id: string) => bourbons.find((b: Bourbon) => b.id === id)).filter(Boolean);
+interface ListsViewProps {
+  wantToTry: string[];
+  tried: string[];
+  onSelect: (id: string) => void;
+  bourbons: Bourbon[];
+}
+
+export default function ListsView({ wantToTry, tried, onSelect, bourbons }: ListsViewProps) {
+  const wantBourbons = wantToTry.map((id) => bourbons.find((b) => b.id === id)).filter(Boolean) as Bourbon[];
+  const triedBourbons = tried.map((id) => bourbons.find((b) => b.id === id)).filter(Boolean) as Bourbon[];
 
   return (
     <div className="space-y-12 animate-in fade-in duration-500">
@@ -25,7 +32,7 @@ export default function ListsView({ wantToTry, tried, onSelect, bourbons }: any)
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {wantBourbons.map((b: any) => (
+            {wantBourbons.map((b) => (
               <ListCard key={b.id} bourbon={b} onClick={() => onSelect(b.id)} />
             ))}
           </div>
@@ -44,7 +51,7 @@ export default function ListsView({ wantToTry, tried, onSelect, bourbons }: any)
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {triedBourbons.map((b: any) => (
+            {triedBourbons.map((b) => (
               <ListCard key={b.id} bourbon={b} onClick={() => onSelect(b.id)} />
             ))}
           </div>

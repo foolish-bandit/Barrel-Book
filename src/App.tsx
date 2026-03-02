@@ -5,7 +5,7 @@ import SubmitBourbonModal from './components/SubmitBourbonModal';
 import BarcodeScanner, { BarcodeScanResult } from './components/BarcodeScanner';
 import { normalizeBourbonName } from './utils/stringUtils';
 import { saveUpcMapping } from './services/upcService';
-import { ViewState, Review } from './types';
+import { ViewState, Review, User } from './types';
 import HomeView from './components/HomeView';
 import CatalogView from './components/CatalogView';
 import DetailView from './components/DetailView';
@@ -21,7 +21,7 @@ export default function App() {
   const [wantToTry, setWantToTry] = useState<string[]>([]);
   const [tried, setTried] = useState<string[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [showRulesModal, setShowRulesModal] = useState(false);
   const [showSubmitModal, setShowSubmitModal] = useState(false);
   const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);

@@ -1,9 +1,15 @@
 import { useState } from 'react';
 import { Search, Star, Heart, List as ListIcon } from 'lucide-react';
-import { ViewState } from '../types';
+import { ViewState, User } from '../types';
 import { Bourbon } from '../data';
 
-export default function HomeView({ onNavigate, user, bourbons }: any) {
+interface HomeViewProps {
+  onNavigate: (view: ViewState, id?: string) => void;
+  user: User | null;
+  bourbons: Bourbon[];
+}
+
+export default function HomeView({ onNavigate, user, bourbons }: HomeViewProps) {
   const [searchQuery, setSearchQuery] = useState('');
 
   const handleSearch = (e: React.FormEvent) => {

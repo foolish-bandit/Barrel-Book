@@ -1,6 +1,17 @@
+import React from 'react';
 import { Heart, CheckCircle } from 'lucide-react';
+import { Bourbon } from '../data';
 
-export default function BourbonCard({ bourbon, onClick, isWanted, isTried, onToggleWant, onToggleTried }: any) {
+interface BourbonCardProps {
+  bourbon: Bourbon;
+  onClick: () => void;
+  isWanted: boolean;
+  isTried: boolean;
+  onToggleWant: (e: React.MouseEvent) => void;
+  onToggleTried: (e: React.MouseEvent) => void;
+}
+
+export default function BourbonCard({ bourbon, onClick, isWanted, isTried, onToggleWant, onToggleTried }: BourbonCardProps) {
   return (
     <div
       onClick={onClick}

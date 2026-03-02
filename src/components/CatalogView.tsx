@@ -1,10 +1,21 @@
-import { useState, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Search, X, Loader2, Plus, Camera, AlertCircle } from 'lucide-react';
 import { Bourbon } from '../data';
 import { GoogleGenAI, Type } from '@google/genai';
 import BourbonCard from './BourbonCard';
 
-export default function CatalogView({ onSelect, wantToTry, tried, toggleWantToTry, toggleTried, bourbons, onOpenSubmit, onOpenScanner }: any) {
+interface CatalogViewProps {
+  onSelect: (id: string) => void;
+  wantToTry: string[];
+  tried: string[];
+  toggleWantToTry: (id: string) => void;
+  toggleTried: (id: string) => void;
+  bourbons: Bourbon[];
+  onOpenSubmit: () => void;
+  onOpenScanner: () => void;
+}
+
+export default function CatalogView({ onSelect, wantToTry, tried, toggleWantToTry, toggleTried, bourbons, onOpenSubmit, onOpenScanner }: CatalogViewProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [aiResults, setAiResults] = useState<string[] | null>(null);
@@ -228,8 +239,8 @@ export default function CatalogView({ onSelect, wantToTry, tried, toggleWantToTr
                 onClick={() => onSelect(bourbon.id)}
                 isWanted={wantToTry.includes(bourbon.id)}
                 isTried={tried.includes(bourbon.id)}
-                onToggleWant={(e: any) => { e.stopPropagation(); toggleWantToTry(bourbon.id); }}
-                onToggleTried={(e: any) => { e.stopPropagation(); toggleTried(bourbon.id); }}
+                onToggleWant={(e: React.MouseEvent) => { e.stopPropagation(); toggleWantToTry(bourbon.id); }}
+                onToggleTried={(e: React.MouseEvent) => { e.stopPropagation(); toggleTried(bourbon.id); }}
               />
             ))
           ) : (

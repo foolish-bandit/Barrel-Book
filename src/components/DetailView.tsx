@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Star, Heart, CheckCircle, ChevronLeft } from 'lucide-react';
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, ResponsiveContainer } from 'recharts';
 import { Bourbon } from '../data';
@@ -7,7 +7,20 @@ import { getSimilarBourbons } from '../utils/bourbonUtils';
 import BourbonCard from './BourbonCard';
 import StatBox from './StatBox';
 
-export default function DetailView({ id, onBack, onSelectSimilar, wantToTry, tried, toggleWantToTry, toggleTried, reviews, onAddReview, bourbons }: any) {
+interface DetailViewProps {
+  id: string;
+  onBack: () => void;
+  onSelectSimilar: (id: string) => void;
+  wantToTry: string[];
+  tried: string[];
+  toggleWantToTry: (id: string) => void;
+  toggleTried: (id: string) => void;
+  reviews: Review[];
+  onAddReview: (review: Omit<Review, 'id' | 'date' | 'userId' | 'userName' | 'userPicture'>) => void;
+  bourbons: Bourbon[];
+}
+
+export default function DetailView({ id, onBack, onSelectSimilar, wantToTry, tried, toggleWantToTry, toggleTried, reviews, onAddReview, bourbons }: DetailViewProps) {
   const bourbon = bourbons.find((b: Bourbon) => b.id === id);
   const [rating, setRating] = useState(0);
   const [reviewText, setReviewText] = useState('');
@@ -134,8 +147,8 @@ export default function DetailView({ id, onBack, onSelectSimilar, wantToTry, tri
               onClick={() => onSelectSimilar(b.id)}
               isWanted={wantToTry.includes(b.id)}
               isTried={tried.includes(b.id)}
-              onToggleWant={(e: any) => { e.stopPropagation(); toggleWantToTry(b.id); }}
-              onToggleTried={(e: any) => { e.stopPropagation(); toggleTried(b.id); }}
+              onToggleWant={(e: React.MouseEvent) => { e.stopPropagation(); toggleWantToTry(b.id); }}
+              onToggleTried={(e: React.MouseEvent) => { e.stopPropagation(); toggleTried(b.id); }}
             />
           ))}
         </div>

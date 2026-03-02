@@ -1,4 +1,11 @@
-export default function ListCard({ bourbon, onClick }: any) {
+import { Bourbon } from '../data';
+
+interface ListCardProps {
+  bourbon: Bourbon;
+  onClick: () => void;
+}
+
+export default function ListCard({ bourbon, onClick }: ListCardProps) {
   return (
     <div
       onClick={onClick}
