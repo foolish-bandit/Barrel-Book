@@ -795,49 +795,43 @@ function CatalogView({ onSelect, wantToTry, tried, toggleWantToTry, toggleTried,
 
 function BourbonCard({ bourbon, onClick, isWanted, isTried, onToggleWant, onToggleTried }: any) {
   return (
-    <div 
+    <div
       onClick={onClick}
       className="group bg-[#1A1816] vintage-border overflow-hidden cursor-pointer hover:border-[#C89B3C] hover:shadow-[0_0_30px_rgba(200,155,60,0.1)] transition-all duration-500 flex flex-col h-full relative"
     >
       <div className="absolute top-0 left-0 w-full h-full pointer-events-none border-[2px] border-[#141210] m-1 z-10"></div>
-      <div className="relative h-56 overflow-hidden bg-[#141210] flex items-center justify-center vintage-border-b">
-        <span className="font-serif text-8xl text-[#EAE4D9] font-normal opacity-5 group-hover:opacity-10 group-hover:scale-110 transition-all duration-700">
-          {bourbon.name.charAt(0)}
-        </span>
-        <div className="absolute inset-0 bg-gradient-to-t from-[#1A1816] via-transparent to-transparent opacity-80" />
-        <div className="absolute top-4 right-4 flex gap-3 z-20">
-          <button 
-            onClick={onToggleWant}
-            className={`p-2 rounded-full backdrop-blur-md transition-all duration-300 ${isWanted ? 'bg-[#C89B3C]/20 text-[#C89B3C] border border-[#C89B3C]/50' : 'bg-[#141210]/80 text-[#EAE4D9]/40 hover:text-[#C89B3C] border border-transparent hover:border-[#C89B3C]/30'}`}
-            title="Want to Try"
-          >
-            <Heart size={16} className={isWanted ? "fill-current" : ""} />
-          </button>
-          <button 
-            onClick={onToggleTried}
-            className={`p-2 rounded-full backdrop-blur-md transition-all duration-300 ${isTried ? 'bg-[#C89B3C]/20 text-[#C89B3C] border border-[#C89B3C]/50' : 'bg-[#141210]/80 text-[#EAE4D9]/40 hover:text-[#C89B3C] border border-transparent hover:border-[#C89B3C]/30'}`}
-            title="Tried"
-          >
-            <CheckCircle size={16} className={isTried ? "fill-current" : ""} />
-          </button>
-        </div>
-        <div className="absolute bottom-4 left-5 right-5 flex justify-between items-end z-20">
-          <div className="flex flex-col items-start gap-1">
-            {bourbon.source === 'community' && (
-              <span className="px-2 py-0.5 bg-[#C89B3C]/20 backdrop-blur-sm text-[8px] font-sans font-semibold tracking-widest uppercase text-[#C89B3C] border border-[#C89B3C]/30 rounded-sm">
-                Community
-              </span>
-            )}
-            <span className="px-3 py-1 bg-[#141210]/90 backdrop-blur-sm text-[10px] font-sans font-semibold tracking-widest uppercase text-[#C89B3C] vintage-border">
-              {bourbon.proof} Proof
-            </span>
-          </div>
-          <span className="font-serif text-xl text-[#EAE4D9] italic">${bourbon.price}</span>
-        </div>
-      </div>
       <div className="p-6 flex-1 flex flex-col relative z-20 bg-[#1A1816]">
-        <h3 className="font-serif text-2xl font-normal text-[#EAE4D9] mb-2 group-hover:text-[#C89B3C] transition-colors leading-tight">{bourbon.name}</h3>
-        <p className="micro-label text-[#C89B3C] mb-4">{bourbon.distillery}</p>
+        <div className="flex items-start justify-between mb-2">
+          <h3 className="font-serif text-2xl font-normal text-[#EAE4D9] group-hover:text-[#C89B3C] transition-colors leading-tight flex-1 mr-3">{bourbon.name}</h3>
+          <div className="flex gap-2 shrink-0">
+            <button
+              onClick={onToggleWant}
+              className={`p-2 rounded-full transition-all duration-300 ${isWanted ? 'bg-[#C89B3C]/20 text-[#C89B3C] border border-[#C89B3C]/50' : 'bg-[#141210]/80 text-[#EAE4D9]/40 hover:text-[#C89B3C] border border-transparent hover:border-[#C89B3C]/30'}`}
+              title="Want to Try"
+            >
+              <Heart size={16} className={isWanted ? "fill-current" : ""} />
+            </button>
+            <button
+              onClick={onToggleTried}
+              className={`p-2 rounded-full transition-all duration-300 ${isTried ? 'bg-[#C89B3C]/20 text-[#C89B3C] border border-[#C89B3C]/50' : 'bg-[#141210]/80 text-[#EAE4D9]/40 hover:text-[#C89B3C] border border-transparent hover:border-[#C89B3C]/30'}`}
+              title="Tried"
+            >
+              <CheckCircle size={16} className={isTried ? "fill-current" : ""} />
+            </button>
+          </div>
+        </div>
+        <p className="micro-label text-[#C89B3C] mb-3">{bourbon.distillery}</p>
+        <div className="flex items-center gap-3 mb-4">
+          {bourbon.source === 'community' && (
+            <span className="px-2 py-0.5 bg-[#C89B3C]/20 text-[8px] font-sans font-semibold tracking-widest uppercase text-[#C89B3C] border border-[#C89B3C]/30 rounded-sm">
+              Community
+            </span>
+          )}
+          <span className="px-3 py-1 bg-[#141210]/90 text-[10px] font-sans font-semibold tracking-widest uppercase text-[#C89B3C] vintage-border">
+            {bourbon.proof} Proof
+          </span>
+          <span className="font-serif text-lg text-[#EAE4D9] italic ml-auto">${bourbon.price}</span>
+        </div>
         <div className="w-8 h-px bg-[#EAE4D9]/10 mb-4"></div>
         <p className="text-sm text-[#EAE4D9]/60 line-clamp-3 flex-1 font-serif italic leading-relaxed">{bourbon.description}</p>
       </div>
@@ -886,37 +880,7 @@ function DetailView({ id, onBack, onSelectSimilar, wantToTry, tried, toggleWantT
         <span>Back to Catalog</span>
       </button>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
-        {/* Left Col: Image & Actions */}
-        <div className="space-y-8">
-          <div className="relative rounded-none overflow-hidden bg-[#141210] aspect-[3/4] flex items-center justify-center vintage-border p-2">
-            <div className="absolute top-0 left-0 w-full h-full pointer-events-none border-[2px] border-[#1A1816] m-1 z-10"></div>
-            <span className="font-serif text-9xl text-[#EAE4D9] font-normal opacity-5 z-0">
-              {bourbon.name.charAt(0)}
-            </span>
-            <div className="absolute inset-0 bg-gradient-to-t from-[#1A1816] via-transparent to-transparent opacity-80 z-0" />
-          </div>
-          
-          <div className="grid grid-cols-2 gap-4">
-            <button 
-              onClick={() => toggleWantToTry(id)}
-              className={`flex items-center justify-center gap-3 py-4 vintage-border transition-all duration-300 font-sans font-semibold tracking-widest uppercase text-xs ${isWanted ? 'bg-[#C89B3C]/10 border-[#C89B3C]/50 text-[#C89B3C]' : 'bg-transparent text-[#EAE4D9]/60 hover:text-[#C89B3C] hover:border-[#C89B3C]/30'}`}
-            >
-              <Heart size={16} className={isWanted ? "fill-current" : ""} />
-              {isWanted ? 'Wanted' : 'Want to Try'}
-            </button>
-            <button 
-              onClick={() => toggleTried(id)}
-              className={`flex items-center justify-center gap-3 py-4 vintage-border transition-all duration-300 font-sans font-semibold tracking-widest uppercase text-xs ${isTried ? 'bg-[#C89B3C]/10 border-[#C89B3C]/50 text-[#C89B3C]' : 'bg-transparent text-[#EAE4D9]/60 hover:text-[#C89B3C] hover:border-[#C89B3C]/30'}`}
-            >
-              <CheckCircle size={16} className={isTried ? "fill-current" : ""} />
-              {isTried ? 'Tried It' : 'Mark Tried'}
-            </button>
-          </div>
-        </div>
-
-        {/* Middle Col: Details */}
-        <div className="lg:col-span-2 space-y-10">
+      <div className="space-y-10">
           <div>
             <div className="flex items-start justify-between gap-6 mb-4">
               <div className="flex flex-col gap-2">
@@ -927,14 +891,32 @@ function DetailView({ id, onBack, onSelectSimilar, wantToTry, tried, toggleWantT
                 )}
                 <h1 className="font-serif text-5xl md:text-6xl font-normal text-[#EAE4D9] leading-none">{bourbon.name}</h1>
               </div>
-              {avgRating && (
-                <div className="flex items-center gap-2 bg-[#1A1816] vintage-border px-4 py-2">
-                  <Star size={18} className="fill-[#C89B3C] text-[#C89B3C]" />
-                  <span className="font-serif text-xl italic text-[#EAE4D9]">{avgRating}</span>
-                </div>
-              )}
+              <div className="flex items-center gap-4">
+                {avgRating && (
+                  <div className="flex items-center gap-2 bg-[#1A1816] vintage-border px-4 py-2">
+                    <Star size={18} className="fill-[#C89B3C] text-[#C89B3C]" />
+                    <span className="font-serif text-xl italic text-[#EAE4D9]">{avgRating}</span>
+                  </div>
+                )}
+              </div>
             </div>
-            <p className="micro-label text-[#C89B3C]">{bourbon.distillery}</p>
+            <p className="micro-label text-[#C89B3C] mb-6">{bourbon.distillery}</p>
+            <div className="grid grid-cols-2 gap-4 max-w-sm">
+              <button
+                onClick={() => toggleWantToTry(id)}
+                className={`flex items-center justify-center gap-3 py-4 vintage-border transition-all duration-300 font-sans font-semibold tracking-widest uppercase text-xs ${isWanted ? 'bg-[#C89B3C]/10 border-[#C89B3C]/50 text-[#C89B3C]' : 'bg-transparent text-[#EAE4D9]/60 hover:text-[#C89B3C] hover:border-[#C89B3C]/30'}`}
+              >
+                <Heart size={16} className={isWanted ? "fill-current" : ""} />
+                {isWanted ? 'Wanted' : 'Want to Try'}
+              </button>
+              <button
+                onClick={() => toggleTried(id)}
+                className={`flex items-center justify-center gap-3 py-4 vintage-border transition-all duration-300 font-sans font-semibold tracking-widest uppercase text-xs ${isTried ? 'bg-[#C89B3C]/10 border-[#C89B3C]/50 text-[#C89B3C]' : 'bg-transparent text-[#EAE4D9]/60 hover:text-[#C89B3C] hover:border-[#C89B3C]/30'}`}
+              >
+                <CheckCircle size={16} className={isTried ? "fill-current" : ""} />
+                {isTried ? 'Tried It' : 'Mark Tried'}
+              </button>
+            </div>
           </div>
 
           <div className="w-16 h-px bg-[#C89B3C]/50"></div>
@@ -968,7 +950,6 @@ function DetailView({ id, onBack, onSelectSimilar, wantToTry, tried, toggleWantT
               </ResponsiveContainer>
             </div>
           </div>
-        </div>
       </div>
 
       <div className="w-full h-px bg-gradient-to-r from-transparent via-[#C89B3C]/30 to-transparent my-16"></div>
