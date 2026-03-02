@@ -15,7 +15,7 @@ interface SubmitBourbonModalProps {
   onOpenScanner?: () => void;
 }
 
-type Step = 'input' | 'duplicate-check' | 'loading' | 'review';
+type Step = 'input' | 'duplicate-check' | 'loading' | 'manual-entry' | 'review';
 
 export default function SubmitBourbonModal({ onClose, onSubmit, onSelectExisting, existingBourbons, prefillName, prefillDetails, onOpenScanner }: SubmitBourbonModalProps) {
   const [step, setStep] = useState<Step>('input');
@@ -66,8 +66,24 @@ export default function SubmitBourbonModal({ onClose, onSubmit, onSelectExisting
       setStep('review');
     } catch (err) {
       console.error(err);
-      setError('Failed to generate bourbon data. Please try again.');
-      setStep('input');
+      setGeneratedBourbon({
+        name: name,
+        distillery: '',
+        region: '',
+        proof: 0,
+        age: 'NAS',
+        mashBill: '',
+        price: 0,
+        description: '',
+        flavorProfile: {
+          sweetness: 5, spice: 5, oak: 5, caramel: 5, vanilla: 5, fruit: 5,
+          nutty: 5, floral: 5, smoky: 5, leather: 5, heat: 5, complexity: 5
+        },
+        type: 'Bourbon',
+        source: 'community' as const,
+        submissionCount: 1,
+      });
+      setStep('manual-entry');
     }
   };
 
@@ -232,6 +248,135 @@ export default function SubmitBourbonModal({ onClose, onSubmit, onSelectExisting
               <div>
                 <h3 className="text-xl font-serif text-[#EAE4D9] mb-2">Analyzing Bourbon Data</h3>
                 <p className="text-[#EAE4D9]/60">Consulting the archives...</p>
+              </div>
+            </div>
+          )}
+
+          {step === 'manual-entry' && generatedBourbon && (
+            <div className="space-y-6">
+              <div className="bg-[#C89B3C]/10 border border-[#C89B3C]/30 p-4 rounded-lg flex items-start gap-3">
+                <AlertCircle className="text-[#C89B3C] shrink-0 mt-0.5" size={18} />
+                <div>
+                  <h3 className="text-[#C89B3C] font-medium mb-1">AI Assist Unavailable</h3>
+                  <p className="text-[#EAE4D9]/80 text-sm">
+                    These are not AI-enhanced results. Our AI bourbon expert is temporarily offline and we're working on fixing it.
+                    Please fill in the details manually — enter what you know and leave the rest as-is.
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-semibold tracking-widest uppercase text-[#EAE4D9]/60 mb-1">Name *</label>
+                    <input
+                      type="text"
+                      value={generatedBourbon.name}
+                      onChange={(e) => handleFieldChange('name', e.target.value)}
+                      className="w-full bg-[#141210] border border-[var(--color-vintage-border)] text-[#EAE4D9] p-2 rounded focus:outline-none focus:border-[#C89B3C]"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold tracking-widest uppercase text-[#EAE4D9]/60 mb-1">Distillery</label>
+                    <input
+                      type="text"
+                      value={generatedBourbon.distillery}
+                      onChange={(e) => handleFieldChange('distillery', e.target.value)}
+                      className="w-full bg-[#141210] border border-[var(--color-vintage-border)] text-[#EAE4D9] p-2 rounded focus:outline-none focus:border-[#C89B3C]"
+                      placeholder="e.g. Heaven Hill"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-semibold tracking-widest uppercase text-[#EAE4D9]/60 mb-1">Proof</label>
+                      <input
+                        type="number"
+                        value={generatedBourbon.proof || ''}
+                        onChange={(e) => handleFieldChange('proof', parseFloat(e.target.value) || 0)}
+                        className="w-full bg-[#141210] border border-[var(--color-vintage-border)] text-[#EAE4D9] p-2 rounded focus:outline-none focus:border-[#C89B3C]"
+                        placeholder="e.g. 90"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold tracking-widest uppercase text-[#EAE4D9]/60 mb-1">Age</label>
+                      <input
+                        type="text"
+                        value={generatedBourbon.age}
+                        onChange={(e) => handleFieldChange('age', e.target.value)}
+                        className="w-full bg-[#141210] border border-[var(--color-vintage-border)] text-[#EAE4D9] p-2 rounded focus:outline-none focus:border-[#C89B3C]"
+                        placeholder="e.g. 12 Years"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold tracking-widest uppercase text-[#EAE4D9]/60 mb-1">Mash Bill</label>
+                    <input
+                      type="text"
+                      value={generatedBourbon.mashBill}
+                      onChange={(e) => handleFieldChange('mashBill', e.target.value)}
+                      className="w-full bg-[#141210] border border-[var(--color-vintage-border)] text-[#EAE4D9] p-2 rounded focus:outline-none focus:border-[#C89B3C]"
+                      placeholder="e.g. High Rye"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold tracking-widest uppercase text-[#EAE4D9]/60 mb-1">Avg Price ($)</label>
+                    <input
+                      type="number"
+                      value={generatedBourbon.price || ''}
+                      onChange={(e) => handleFieldChange('price', parseFloat(e.target.value) || 0)}
+                      className="w-full bg-[#141210] border border-[var(--color-vintage-border)] text-[#EAE4D9] p-2 rounded focus:outline-none focus:border-[#C89B3C]"
+                      placeholder="e.g. 35"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-semibold tracking-widest uppercase text-[#EAE4D9]/60 mb-1">Description</label>
+                    <textarea
+                      value={generatedBourbon.description}
+                      onChange={(e) => handleFieldChange('description', e.target.value)}
+                      className="w-full bg-[#141210] border border-[var(--color-vintage-border)] text-[#EAE4D9] p-2 rounded focus:outline-none focus:border-[#C89B3C] h-32"
+                      placeholder="Tasting notes, character, anything notable..."
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold tracking-widest uppercase text-[#EAE4D9]/60 mb-2">Flavor Profile (1-10)</label>
+                    <div className="grid grid-cols-2 gap-x-4 gap-y-2 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
+                      {Object.entries(generatedBourbon.flavorProfile || {}).map(([key, value]) => (
+                        <div key={key} className="flex items-center justify-between">
+                          <span className="text-xs text-[#EAE4D9]/80 capitalize">{key}</span>
+                          <input
+                            type="number"
+                            min="0"
+                            max="10"
+                            value={value}
+                            onChange={(e) => handleFlavorChange(key as keyof FlavorProfile, parseInt(e.target.value))}
+                            className="w-12 bg-[#141210] border border-[var(--color-vintage-border)] text-[#EAE4D9] p-1 rounded text-center text-xs focus:outline-none focus:border-[#C89B3C]"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex justify-end pt-6 border-t border-[var(--color-vintage-border)] gap-4">
+                <button
+                  onClick={() => { setStep('input'); setGeneratedBourbon(null); }}
+                  className="text-[#EAE4D9]/60 hover:text-[#EAE4D9] text-sm"
+                >
+                  Back
+                </button>
+                <button
+                  onClick={handleConfirm}
+                  disabled={!generatedBourbon.name?.trim()}
+                  className="bg-[#C89B3C] text-[#141210] px-6 py-3 rounded font-semibold tracking-widest uppercase hover:bg-[#B08832] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  Submit Manually
+                </button>
               </div>
             </div>
           )}
