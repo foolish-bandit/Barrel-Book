@@ -1,178 +1,38 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import { useState } from 'react';
 import { List as ListIcon, X, Plus } from 'lucide-react';
-import { BOURBONS, Bourbon, FlavorProfile } from './data';
+import { Bourbon } from './data';
 import SubmitBourbonModal from './components/SubmitBourbonModal';
 import BarcodeScanner, { BarcodeScanResult } from './components/BarcodeScanner';
-import { normalizeBourbonName } from './utils/stringUtils';
 import { saveUpcMapping } from './services/upcService';
-import { ViewState, Review, User } from './types';
+import { ViewState } from './types';
 import HomeView from './components/HomeView';
 import CatalogView from './components/CatalogView';
 import DetailView from './components/DetailView';
 import ListsView from './components/ListsView';
+import { useBourbonLists } from './hooks/useBourbonLists';
+import { useReviews } from './hooks/useReviews';
+import { useAuth } from './hooks/useAuth';
+import { useCustomBourbons } from './hooks/useCustomBourbons';
 
 // --- Main App Component ---
 
 export default function App() {
   const [view, setView] = useState<ViewState>('home');
   const [selectedId, setSelectedId] = useState<string | null>(null);
-
-  // User Data State
-  const [wantToTry, setWantToTry] = useState<string[]>([]);
-  const [tried, setTried] = useState<string[]>([]);
-  const [reviews, setReviews] = useState<Review[]>([]);
-  const [user, setUser] = useState<User | null>(null);
-  const [showRulesModal, setShowRulesModal] = useState(false);
   const [showSubmitModal, setShowSubmitModal] = useState(false);
   const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
   const [barcodePrefill, setBarcodePrefill] = useState<{ name: string; details: string; upc: string } | null>(null);
-  const [customBourbons, setCustomBourbons] = useState<Bourbon[]>([]);
 
-  // Load from localStorage
-  useEffect(() => {
-    const savedWant = localStorage.getItem('bs_wantToTry');
-    const savedTried = localStorage.getItem('bs_tried');
-    const savedReviews = localStorage.getItem('bs_reviews');
-    const savedUser = localStorage.getItem('bs_user');
-    const savedCustom = localStorage.getItem('bs_customBourbons');
-    if (savedWant) setWantToTry(JSON.parse(savedWant));
-    if (savedTried) setTried(JSON.parse(savedTried));
-    if (savedReviews) setReviews(JSON.parse(savedReviews));
-    if (savedUser) setUser(JSON.parse(savedUser));
-    if (savedCustom) setCustomBourbons(JSON.parse(savedCustom));
-  }, []);
+  const { wantToTry, tried, toggleWantToTry, toggleTried } = useBourbonLists();
+  const { user, handleSignIn, handleSignOut, showRulesModal, setShowRulesModal } = useAuth();
+  const { reviews, addReview, getReviewsForBourbon } = useReviews(user);
+  const { allBourbons, handleAddBourbon } = useCustomBourbons();
 
-  // Save to localStorage
-  useEffect(() => {
-    localStorage.setItem('bs_wantToTry', JSON.stringify(wantToTry));
-    localStorage.setItem('bs_tried', JSON.stringify(tried));
-    localStorage.setItem('bs_reviews', JSON.stringify(reviews));
-    localStorage.setItem('bs_customBourbons', JSON.stringify(customBourbons));
-    if (user) {
-      localStorage.setItem('bs_user', JSON.stringify(user));
-    } else {
-      localStorage.removeItem('bs_user');
-    }
-  }, [wantToTry, tried, reviews, user, customBourbons]);
-
-  const allBourbons = useMemo(() => {
-    return [...BOURBONS, ...customBourbons];
-  }, [customBourbons]);
-
-  const handleAddBourbon = (newBourbon: Bourbon) => {
-    setCustomBourbons(prev => {
-      const normalizedNewName = normalizeBourbonName(newBourbon.name);
-      const existingIndex = prev.findIndex(b => normalizeBourbonName(b.name) === normalizedNewName);
-
-      if (existingIndex >= 0) {
-        // Merge with existing community submission
-        const existing = prev[existingIndex];
-        const count = (existing.submissionCount || 1);
-        const newCount = count + 1;
-
-        // Average flavor profile
-        const newFlavorProfile = { ...existing.flavorProfile };
-        (Object.keys(newFlavorProfile) as Array<keyof FlavorProfile>).forEach(key => {
-          newFlavorProfile[key] = Math.round(
-            ((existing.flavorProfile[key] * count) + newBourbon.flavorProfile[key]) / newCount
-          );
-        });
-
-        const updatedBourbon: Bourbon = {
-          ...existing,
-          flavorProfile: newFlavorProfile,
-          submissionCount: newCount,
-          source: newCount >= 3 ? 'curated' : 'community'
-        };
-
-        const newCustom = [...prev];
-        newCustom[existingIndex] = updatedBourbon;
-
-        setSelectedId(existing.id);
-        return newCustom;
-      } else {
-        // Add new
-        setSelectedId(newBourbon.id);
-        return [...prev, newBourbon];
-      }
-    });
+  const onAddBourbon = (newBourbon: Bourbon) => {
+    const resultId = handleAddBourbon(newBourbon);
+    setSelectedId(resultId);
     setShowSubmitModal(false);
     setView('detail');
-  };
-
-  // OAuth Message Listener
-  useEffect(() => {
-    const handleMessage = (event: MessageEvent) => {
-      const origin = event.origin;
-      if (origin !== window.location.origin) {
-        return;
-      }
-      if (event.data?.type === 'OAUTH_AUTH_SUCCESS') {
-        const newUser = event.data.user;
-        setUser(newUser);
-
-        // Check if first time
-        const hasSeenRules = localStorage.getItem(`bs_seen_rules_${newUser.id}`);
-        if (!hasSeenRules) {
-          setShowRulesModal(true);
-          localStorage.setItem(`bs_seen_rules_${newUser.id}`, 'true');
-        }
-      }
-    };
-    window.addEventListener('message', handleMessage);
-    return () => window.removeEventListener('message', handleMessage);
-  }, []);
-
-  const handleSignIn = async () => {
-    try {
-      const response = await fetch('/api/auth/url');
-      if (!response.ok) throw new Error('Failed to get auth URL');
-      const { url } = await response.json();
-
-      const authWindow = window.open(url, 'oauth_popup', 'width=600,height=700');
-      if (!authWindow) {
-        alert('Please allow popups for this site to sign in.');
-      }
-    } catch (error) {
-      console.error('OAuth error:', error);
-      alert('Failed to initiate sign in. Please try again.');
-    }
-  };
-
-  const handleSignOut = () => {
-    setUser(null);
-  };
-
-  const toggleWantToTry = (id: string) => {
-    if (wantToTry.includes(id)) {
-      setWantToTry(prev => prev.filter(x => x !== id));
-    } else {
-      setWantToTry(prev => [...prev, id]);
-      setTried(prev => prev.filter(x => x !== id)); // Remove from tried if adding to want
-    }
-  };
-
-  const toggleTried = (id: string) => {
-    if (tried.includes(id)) {
-      setTried(prev => prev.filter(x => x !== id));
-    } else {
-      setTried(prev => [...prev, id]);
-      setWantToTry(prev => prev.filter(x => x !== id)); // Remove from want if adding to tried
-    }
-  };
-
-  const addReview = (review: Omit<Review, 'id' | 'date' | 'userId' | 'userName' | 'userPicture'>) => {
-    const newReview: Review = {
-      ...review,
-      id: Math.random().toString(36).substr(2, 9),
-      date: new Date().toISOString(),
-      ...(user && {
-        userId: user.id,
-        userName: user.name,
-        userPicture: user.picture,
-      }),
-    };
-    setReviews(prev => [newReview, ...prev]);
   };
 
   const handleBarcodeScanResult = (result: BarcodeScanResult) => {
@@ -190,7 +50,7 @@ export default function App() {
   };
 
   const handleAddBourbonWithUpc = (newBourbon: Bourbon, upc?: string) => {
-    handleAddBourbon(newBourbon);
+    onAddBourbon(newBourbon);
     if (upc) {
       saveUpcMapping(upc, newBourbon.id);
     }
@@ -288,7 +148,7 @@ export default function App() {
             tried={tried}
             toggleWantToTry={toggleWantToTry}
             toggleTried={toggleTried}
-            reviews={reviews.filter(r => r.bourbonId === selectedId)}
+            reviews={getReviewsForBourbon(selectedId)}
             onAddReview={addReview}
             bourbons={allBourbons}
           />
