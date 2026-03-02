@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Star, Heart, CheckCircle, ChevronLeft } from 'lucide-react';
+import { Star, Heart, CheckCircle, ChevronLeft, Share2 } from 'lucide-react';
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, ResponsiveContainer } from 'recharts';
 import { Bourbon } from '../data';
 import { Review } from '../types';
@@ -24,8 +24,24 @@ export default function DetailView({ id, onBack, onSelectSimilar, wantToTry, tri
   const bourbon = bourbons.find((b: Bourbon) => b.id === id);
   const [rating, setRating] = useState(0);
   const [reviewText, setReviewText] = useState('');
+  const [copied, setCopied] = useState(false);
 
   if (!bourbon) return <div>Not found</div>;
+
+  const handleShare = async () => {
+    const shareData = {
+      title: bourbon.name,
+      text: `Check out ${bourbon.name} on Barrel Book`,
+      url: window.location.href,
+    };
+    if (navigator.share) {
+      try { await navigator.share(shareData); } catch { /* user cancelled */ }
+    } else {
+      await navigator.clipboard.writeText(window.location.href);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
 
   const similar = useMemo(() => getSimilarBourbons(bourbon, bourbons), [bourbon, bourbons]);
   const isWanted = wantToTry.includes(id);
@@ -80,7 +96,7 @@ export default function DetailView({ id, onBack, onSelectSimilar, wantToTry, tri
               </div>
             </div>
             <p className="micro-label text-[#C89B3C] mb-6">{bourbon.distillery}</p>
-            <div className="grid grid-cols-2 gap-4 max-w-sm">
+            <div className="grid grid-cols-3 gap-4 max-w-md">
               <button
                 onClick={() => toggleWantToTry(id)}
                 className={`flex items-center justify-center gap-3 py-4 vintage-border transition-all duration-300 font-sans font-semibold tracking-widest uppercase text-xs ${isWanted ? 'bg-[#C89B3C]/10 border-[#C89B3C]/50 text-[#C89B3C]' : 'bg-transparent text-[#EAE4D9]/60 hover:text-[#C89B3C] hover:border-[#C89B3C]/30'}`}
@@ -94,6 +110,13 @@ export default function DetailView({ id, onBack, onSelectSimilar, wantToTry, tri
               >
                 <CheckCircle size={16} className={isTried ? "fill-current" : ""} />
                 {isTried ? 'Tried It' : 'Mark Tried'}
+              </button>
+              <button
+                onClick={handleShare}
+                className="flex items-center justify-center gap-3 py-4 vintage-border transition-all duration-300 font-sans font-semibold tracking-widest uppercase text-xs bg-transparent text-[#EAE4D9]/60 hover:text-[#C89B3C] hover:border-[#C89B3C]/30"
+              >
+                <Share2 size={16} />
+                {copied ? 'Copied!' : 'Share'}
               </button>
             </div>
           </div>
