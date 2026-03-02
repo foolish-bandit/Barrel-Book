@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { List as ListIcon, X, Plus, Menu } from 'lucide-react';
+import { useState, useCallback } from 'react';
+import { List as ListIcon, X, Plus } from 'lucide-react';
 import { Bourbon } from './data';
 import SubmitBourbonModal from './components/SubmitBourbonModal';
 import BarcodeScanner, { BarcodeScanResult } from './components/BarcodeScanner';
@@ -9,10 +11,12 @@ import HomeView from './components/HomeView';
 import CatalogView from './components/CatalogView';
 import DetailView from './components/DetailView';
 import ListsView from './components/ListsView';
+import Toast from './components/Toast';
 import { useBourbonLists } from './hooks/useBourbonLists';
 import { useReviews } from './hooks/useReviews';
 import { useAuth } from './hooks/useAuth';
 import { useCustomBourbons } from './hooks/useCustomBourbons';
+import { useToast } from './hooks/useToast';
 
 // --- Main App Component ---
 
@@ -41,12 +45,31 @@ export default function App() {
   const { user, handleSignIn, handleSignOut, showRulesModal, setShowRulesModal } = useAuth();
   const { reviews, addReview, editReview, deleteReview, getReviewsForBourbon } = useReviews(user);
   const { allBourbons, handleAddBourbon } = useCustomBourbons();
+  const { toast, showToast } = useToast();
+
+  const toggleWantToTryWithToast = useCallback((id: string) => {
+    const removing = wantToTry.includes(id);
+    toggleWantToTry(id);
+    showToast(removing ? 'Removed from wishlist' : 'Added to wishlist');
+  }, [wantToTry, toggleWantToTry, showToast]);
+
+  const toggleTriedWithToast = useCallback((id: string) => {
+    const removing = tried.includes(id);
+    toggleTried(id);
+    showToast(removing ? 'Removed from tried' : 'Marked as tried');
+  }, [tried, toggleTried, showToast]);
+
+  const addReviewWithToast = useCallback((review: Parameters<typeof addReview>[0]) => {
+    addReview(review);
+    showToast('Review posted');
+  }, [addReview, showToast]);
 
   const onAddBourbon = (newBourbon: Bourbon) => {
     const resultId = handleAddBourbon(newBourbon);
     setSelectedId(resultId);
     setShowSubmitModal(false);
     setView('detail');
+    showToast('Bourbon submitted');
   };
 
   const handleBarcodeScanResult = (result: BarcodeScanResult) => {
@@ -118,7 +141,7 @@ export default function App() {
               <div className="flex items-center gap-4">
                 <img src={user.picture} alt={user.name} className="w-8 h-8 rounded-full vintage-border" referrerPolicy="no-referrer" />
                 <button
-                  onClick={handleSignOut}
+                  onClick={() => { handleSignOut(); showToast('Signed out'); }}
                   className="text-xs font-semibold tracking-widest uppercase text-[#EAE4D9]/60 hover:text-[#EAE4D9] transition-colors"
                 >
                   Sign Out
@@ -203,8 +226,8 @@ export default function App() {
             onSelect={(id: string) => navigateTo('detail', id)}
             wantToTry={wantToTry}
             tried={tried}
-            toggleWantToTry={toggleWantToTry}
-            toggleTried={toggleTried}
+            toggleWantToTry={toggleWantToTryWithToast}
+            toggleTried={toggleTriedWithToast}
             bourbons={allBourbons}
             onOpenSubmit={() => setShowSubmitModal(true)}
             onOpenScanner={() => setShowBarcodeScanner(true)}
@@ -219,13 +242,14 @@ export default function App() {
             onSelectSimilar={(id: string) => navigateTo('detail', id)}
             wantToTry={wantToTry}
             tried={tried}
-            toggleWantToTry={toggleWantToTry}
-            toggleTried={toggleTried}
+            toggleWantToTry={toggleWantToTryWithToast}
+            toggleTried={toggleTriedWithToast}
             reviews={getReviewsForBourbon(selectedId)}
             onAddReview={addReview}
             onEditReview={editReview}
             onDeleteReview={deleteReview}
             user={user}
+            onAddReview={addReviewWithToast}
             bourbons={allBourbons}
           />
         )}
@@ -331,6 +355,13 @@ export default function App() {
           </div>
         </div>
       )}
+
+      {/* Toast Notifications */}
+      <Toast
+        message={toast.message}
+        visible={toast.visible}
+        onClose={() => {}}
+      />
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { Search, X, Loader2, Plus, Camera, AlertCircle } from 'lucide-react';
+import { Search, X, Loader2, Plus, Camera, AlertCircle, ChevronDown } from 'lucide-react';
 import { Bourbon } from '../data';
 import { GoogleGenAI, Type } from '@google/genai';
 import BourbonCard from './BourbonCard';
@@ -26,9 +26,15 @@ export default function CatalogView({ onSelect, wantToTry, tried, toggleWantToTr
   const [searchFallback, setSearchFallback] = useState(false);
   const [activeCategory, setActiveCategory] = useState<string>('All');
   const hasConsumedInitialQuery = useRef(false);
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
 
-  const [maxPrice, setMaxPrice] = useState<number>(150);
-  const [minProof, setMinProof] = useState<number>(80);
+  const maxPriceInData = useMemo(() => Math.max(...bourbons.map(b => b.price)), [bourbons]);
+  const minProofInData = useMemo(() => Math.min(...bourbons.map(b => b.proof)), [bourbons]);
+
+  const [maxPrice, setMaxPrice] = useState<number>(maxPriceInData);
+  const [minProof, setMinProof] = useState<number>(minProofInData);
+
+  const filtersActive = maxPrice < maxPriceInData || minProof > minProofInData;
 
   const [page, setPage] = useState(1);
 
@@ -204,34 +210,58 @@ export default function CatalogView({ onSelect, wantToTry, tried, toggleWantToTr
           ))}
         </div>
 
-        {/* Advanced Filters Toggle (could be collapsible, keeping simple for now) */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 z-10 relative pt-4 border-t border-[#EAE4D9]/10">
-          <div className="space-y-2">
-            <div className="flex justify-between items-center">
-              <label className="micro-label text-[#EAE4D9]">Max Price</label>
-              <span className="font-mono text-xs text-[#C89B3C]">${maxPrice}</span>
+        {/* Advanced Filters Toggle */}
+        <div className="relative z-10 border-t border-[#EAE4D9]/10 pt-4">
+          <button
+            onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+            className="flex items-center gap-2 text-xs font-semibold tracking-widest uppercase text-[#EAE4D9]/60 hover:text-[#EAE4D9] transition-colors"
+          >
+            <ChevronDown className={`h-4 w-4 transition-transform ${showAdvancedFilters ? 'rotate-180' : ''}`} />
+            Advanced Filters
+            {filtersActive && (
+              <span className="px-2 py-0.5 text-[10px] font-semibold tracking-wider uppercase bg-[#C89B3C]/20 text-[#C89B3C] border border-[#C89B3C]/30 rounded-full">
+                Active
+              </span>
+            )}
+          </button>
+          {showAdvancedFilters && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-4">
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <label className="micro-label text-[#EAE4D9]">Max Price</label>
+                  <span className="font-mono text-xs text-[#C89B3C]">${maxPrice}</span>
+                </div>
+                <input
+                  type="range"
+                  min="0" max={maxPriceInData} step="10"
+                  value={maxPrice}
+                  onChange={(e) => setMaxPrice(Number(e.target.value))}
+                  className="w-full accent-[#C89B3C] h-1 bg-[#141210] rounded-none appearance-none cursor-pointer"
+                />
+              </div>
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <label className="micro-label text-[#EAE4D9]">Min Proof</label>
+                  <span className="font-mono text-xs text-[#C89B3C]">{minProof}</span>
+                </div>
+                <input
+                  type="range"
+                  min={minProofInData} max="160" step="1"
+                  value={minProof}
+                  onChange={(e) => setMinProof(Number(e.target.value))}
+                  className="w-full accent-[#C89B3C] h-1 bg-[#141210] rounded-none appearance-none cursor-pointer"
+                />
+              </div>
+              {filtersActive && (
+                <button
+                  onClick={() => { setMaxPrice(maxPriceInData); setMinProof(minProofInData); }}
+                  className="text-xs font-semibold tracking-widest uppercase text-[#C89B3C] hover:text-[#EAE4D9] transition-colors"
+                >
+                  Reset Filters
+                </button>
+              )}
             </div>
-            <input
-              type="range"
-              min="20" max="500" step="10"
-              value={maxPrice}
-              onChange={(e) => setMaxPrice(Number(e.target.value))}
-              className="w-full accent-[#C89B3C] h-1 bg-[#141210] rounded-none appearance-none cursor-pointer"
-            />
-          </div>
-          <div className="space-y-2">
-            <div className="flex justify-between items-center">
-              <label className="micro-label text-[#EAE4D9]">Min Proof</label>
-              <span className="font-mono text-xs text-[#C89B3C]">{minProof}</span>
-            </div>
-            <input
-              type="range"
-              min="80" max="140" step="1"
-              value={minProof}
-              onChange={(e) => setMinProof(Number(e.target.value))}
-              className="w-full accent-[#C89B3C] h-1 bg-[#141210] rounded-none appearance-none cursor-pointer"
-            />
-          </div>
+          )}
         </div>
       </div>
 
