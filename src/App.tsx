@@ -183,6 +183,7 @@ export default function App() {
             wantToTry={wantToTry}
             tried={tried}
             onSelect={(id: string) => navigateTo('detail', id)}
+            onNavigate={navigateTo}
             bourbons={allBourbons}
           />
         )}

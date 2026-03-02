@@ -17,6 +17,8 @@ interface CatalogViewProps {
   onConsumeSearchQuery?: () => void;
 }
 
+const ITEMS_PER_PAGE = 24;
+
 export default function CatalogView({ onSelect, wantToTry, tried, toggleWantToTry, toggleTried, bourbons, onOpenSubmit, onOpenScanner, initialSearchQuery, onConsumeSearchQuery }: CatalogViewProps) {
   const [searchQuery, setSearchQuery] = useState(initialSearchQuery || '');
   const [isSearching, setIsSearching] = useState(false);
@@ -33,6 +35,8 @@ export default function CatalogView({ onSelect, wantToTry, tried, toggleWantToTr
   const [minProof, setMinProof] = useState<number>(minProofInData);
 
   const filtersActive = maxPrice < maxPriceInData || minProof > minProofInData;
+
+  const [page, setPage] = useState(1);
 
   const categories = ['All', 'High Proof', 'Wheated', 'Rye', 'Single Barrel', 'Under $50'];
 
@@ -133,6 +137,16 @@ export default function CatalogView({ onSelect, wantToTry, tried, toggleWantToTr
     return result.filter((b: Bourbon) => b.price <= maxPrice && b.proof >= minProof);
   }, [aiResults, maxPrice, minProof, bourbons, activeCategory]);
 
+  useEffect(() => setPage(1), [searchQuery, aiResults, activeCategory, maxPrice, minProof]);
+
+  const totalPages = Math.ceil(filteredBourbons.length / ITEMS_PER_PAGE);
+  const paginatedBourbons = filteredBourbons.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
+
+  const handlePageChange = (newPage: number) => {
+    setPage(newPage);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
 
@@ -141,7 +155,10 @@ export default function CatalogView({ onSelect, wantToTry, tried, toggleWantToTr
         <div className="absolute top-0 left-0 w-full h-full pointer-events-none border-[2px] border-[#141210] m-1"></div>
 
         <div className="flex flex-col md:flex-row gap-6 items-start md:items-center justify-between relative z-10">
-           <h2 className="font-serif text-3xl text-[#EAE4D9]">The Catalog</h2>
+           <div className="flex items-baseline gap-3">
+             <h2 className="font-serif text-3xl text-[#EAE4D9]">The Catalog</h2>
+             <span className="micro-label text-[#C89B3C]">{filteredBourbons.length} bourbons</span>
+           </div>
 
            <form onSubmit={handleSearch} className="relative w-full md:w-96">
             <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
@@ -272,37 +289,68 @@ export default function CatalogView({ onSelect, wantToTry, tried, toggleWantToTr
           <p className="text-stone-400 animate-pulse">Consulting the experts...</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredBourbons.length > 0 ? (
-            filteredBourbons.map((bourbon: Bourbon) => (
-              <BourbonCard
-                key={bourbon.id}
-                bourbon={bourbon}
-                onClick={() => onSelect(bourbon.id)}
-                isWanted={wantToTry.includes(bourbon.id)}
-                isTried={tried.includes(bourbon.id)}
-                onToggleWant={(e: React.MouseEvent) => { e.stopPropagation(); toggleWantToTry(bourbon.id); }}
-                onToggleTried={(e: React.MouseEvent) => { e.stopPropagation(); toggleTried(bourbon.id); }}
-              />
-            ))
-          ) : (
-            <div className="col-span-full text-center py-20 space-y-6">
-              <div className="w-16 h-16 rounded-full vintage-border flex items-center justify-center mx-auto text-[#EAE4D9]/40">
-                <Search size={24} />
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {paginatedBourbons.length > 0 ? (
+              paginatedBourbons.map((bourbon: Bourbon) => (
+                <BourbonCard
+                  key={bourbon.id}
+                  bourbon={bourbon}
+                  onClick={() => onSelect(bourbon.id)}
+                  isWanted={wantToTry.includes(bourbon.id)}
+                  isTried={tried.includes(bourbon.id)}
+                  onToggleWant={(e: React.MouseEvent) => { e.stopPropagation(); toggleWantToTry(bourbon.id); }}
+                  onToggleTried={(e: React.MouseEvent) => { e.stopPropagation(); toggleTried(bourbon.id); }}
+                />
+              ))
+            ) : (
+              <div className="col-span-full text-center py-20 space-y-6">
+                <div className="w-16 h-16 rounded-full vintage-border flex items-center justify-center mx-auto text-[#EAE4D9]/40">
+                  <Search size={24} />
+                </div>
+                <div>
+                  <h3 className="text-xl font-serif text-[#EAE4D9] mb-2">No bourbons found</h3>
+                  <p className="text-[#EAE4D9]/60 max-w-md mx-auto mb-6">We couldn't find any matches for your search criteria. Try adjusting your filters or search terms.</p>
+                  <button
+                    onClick={onOpenSubmit}
+                    className="bg-[#C89B3C] text-[#141210] px-6 py-3 rounded font-semibold tracking-widest uppercase hover:bg-[#B08832] transition-colors inline-flex items-center gap-2"
+                  >
+                    <Plus size={16} /> Add it to the database
+                  </button>
+                </div>
               </div>
-              <div>
-                <h3 className="text-xl font-serif text-[#EAE4D9] mb-2">No bourbons found</h3>
-                <p className="text-[#EAE4D9]/60 max-w-md mx-auto mb-6">We couldn't find any matches for your search criteria. Try adjusting your filters or search terms.</p>
+            )}
+          </div>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-8">
+              <span className="micro-label text-[#C89B3C]">
+                Showing {(page - 1) * ITEMS_PER_PAGE + 1}–{Math.min(page * ITEMS_PER_PAGE, filteredBourbons.length)} of {filteredBourbons.length} bourbons
+              </span>
+
+              <div className="flex items-center gap-4">
                 <button
-                  onClick={onOpenSubmit}
-                  className="bg-[#C89B3C] text-[#141210] px-6 py-3 rounded font-semibold tracking-widest uppercase hover:bg-[#B08832] transition-colors inline-flex items-center gap-2"
+                  onClick={() => handlePageChange(page - 1)}
+                  disabled={page === 1}
+                  className="px-4 py-1.5 text-xs font-semibold tracking-widest uppercase transition-colors vintage-border text-[#C89B3C] hover:bg-[#C89B3C] hover:text-[#141210] hover:border-[#C89B3C] disabled:opacity-30 disabled:pointer-events-none"
                 >
-                  <Plus size={16} /> Add it to the database
+                  Previous
+                </button>
+                <span className="text-[#EAE4D9]/60 text-sm font-serif">
+                  Page {page} of {totalPages}
+                </span>
+                <button
+                  onClick={() => handlePageChange(page + 1)}
+                  disabled={page === totalPages}
+                  className="px-4 py-1.5 text-xs font-semibold tracking-widest uppercase transition-colors vintage-border text-[#C89B3C] hover:bg-[#C89B3C] hover:text-[#141210] hover:border-[#C89B3C] disabled:opacity-30 disabled:pointer-events-none"
+                >
+                  Next
                 </button>
               </div>
             </div>
           )}
-        </div>
+        </>
       )}
     </div>
   );
