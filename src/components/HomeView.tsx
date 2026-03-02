@@ -1,10 +1,10 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Search, Star, Heart, List as ListIcon } from 'lucide-react';
 import { ViewState, User } from '../types';
 import { Bourbon } from '../data';
 
 interface HomeViewProps {
-  onNavigate: (view: ViewState, id?: string) => void;
+  onNavigate: (view: ViewState, id?: string, searchQuery?: string) => void;
   user: User | null;
   bourbons: Bourbon[];
 }
@@ -14,12 +14,7 @@ export default function HomeView({ onNavigate, user, bourbons }: HomeViewProps) 
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    if (searchQuery.trim()) {
-      // Pass search query to catalog via some state or just navigate and let user type again?
-      // For now, let's just navigate to catalog. Ideally we'd pass the query.
-      // Since we don't have a global search context yet, we'll just go to catalog.
-      onNavigate('catalog');
-    }
+    onNavigate('catalog', undefined, searchQuery.trim());
   };
 
   const handleRandom = () => {
@@ -39,15 +34,18 @@ export default function HomeView({ onNavigate, user, bourbons }: HomeViewProps) 
 
       <div className="w-full max-w-2xl space-y-8">
         {/* Search */}
-        <div className="bg-[#1A1816] vintage-border p-1 relative group hover:border-[#C89B3C]/50 transition-colors">
-          <button
-            onClick={() => onNavigate('catalog')}
-            className="w-full flex items-center gap-4 px-6 py-4 text-left"
-          >
-            <Search className="h-6 w-6 text-[#C89B3C]" />
-            <span className="text-xl font-serif italic text-[#EAE4D9]/40">Search the archives...</span>
-          </button>
-        </div>
+        <form onSubmit={handleSearch} className="bg-[#1A1816] vintage-border p-1 relative group hover:border-[#C89B3C]/50 focus-within:border-[#C89B3C]/50 transition-colors">
+          <div className="w-full flex items-center gap-4 px-6 py-4">
+            <Search className="h-6 w-6 text-[#C89B3C] flex-shrink-0" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search the archives..."
+              className="flex-1 bg-transparent text-xl font-serif italic text-[#EAE4D9] placeholder-[#EAE4D9]/40 focus:outline-none"
+            />
+          </div>
+        </form>
 
         {/* Actions */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
