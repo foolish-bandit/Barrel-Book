@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Search, Star, Heart, CheckCircle, ChevronLeft, List as ListIcon, X, Loader2, MessageSquare, Plus, Camera } from 'lucide-react';
+import { Search, Star, Heart, CheckCircle, ChevronLeft, List as ListIcon, X, Loader2, MessageSquare, Plus, Camera, AlertCircle } from 'lucide-react';
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, ResponsiveContainer } from 'recharts';
 import { BOURBONS, Bourbon, FlavorProfile } from './data';
 import SubmitBourbonModal from './components/SubmitBourbonModal';
@@ -536,6 +536,7 @@ function CatalogView({ onSelect, wantToTry, tried, toggleWantToTry, toggleTried,
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [aiResults, setAiResults] = useState<string[] | null>(null);
+  const [searchFallback, setSearchFallback] = useState(false);
   const [activeCategory, setActiveCategory] = useState<string>('All');
   
   const [maxPrice, setMaxPrice] = useState<number>(150);
@@ -575,8 +576,10 @@ function CatalogView({ onSelect, wantToTry, tried, toggleWantToTry, toggleTried,
       
       const ids = JSON.parse(response.text || '[]');
       setAiResults(ids);
+      setSearchFallback(false);
     } catch (error) {
       console.error("AI Search failed, falling back to text search", error);
+      setSearchFallback(true);
       // Fallback to text search
       const lowerQ = searchQuery.toLowerCase();
       const matches = bourbons.filter((b: Bourbon) => 
@@ -592,6 +595,7 @@ function CatalogView({ onSelect, wantToTry, tried, toggleWantToTry, toggleTried,
   const clearSearch = () => {
     setSearchQuery('');
     setAiResults(null);
+    setSearchFallback(false);
   };
 
   const filteredBourbons = useMemo(() => {
@@ -716,6 +720,23 @@ function CatalogView({ onSelect, wantToTry, tried, toggleWantToTry, toggleTried,
           </div>
         </div>
       </div>
+
+      {/* AI Fallback Notice */}
+      {searchFallback && aiResults && (
+        <div className="bg-[#C89B3C]/10 border border-[#C89B3C]/30 p-4 rounded-lg flex items-start gap-3">
+          <AlertCircle className="text-[#C89B3C] shrink-0 mt-0.5" size={18} />
+          <p className="text-[#EAE4D9]/80 text-sm flex-1">
+            <span className="text-[#C89B3C] font-medium">AI search is temporarily unavailable.</span>{' '}
+            Showing basic text matches instead. We're working on it.
+          </p>
+          <button
+            onClick={() => setSearchFallback(false)}
+            className="text-[#EAE4D9]/40 hover:text-[#C89B3C] transition-colors shrink-0"
+          >
+            <X size={16} />
+          </button>
+        </div>
+      )}
 
       {/* Results */}
       {isSearching ? (
