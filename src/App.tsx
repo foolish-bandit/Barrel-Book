@@ -1,5 +1,8 @@
 import { useState, useCallback, useEffect } from 'react';
 import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
+import { useState, useEffect, useRef } from 'react';
+import { List as ListIcon, X, Plus, Menu } from 'lucide-react';
+import { useState, useCallback } from 'react';
 import { List as ListIcon, X, Plus } from 'lucide-react';
 import { Bourbon } from './data';
 import SubmitBourbonModal from './components/SubmitBourbonModal';
@@ -25,10 +28,23 @@ export default function App() {
   const [showSubmitModal, setShowSubmitModal] = useState(false);
   const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
   const [barcodePrefill, setBarcodePrefill] = useState<{ name: string; details: string; upc: string } | null>(null);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const mobileMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!mobileMenuOpen) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (mobileMenuRef.current && !mobileMenuRef.current.contains(e.target as Node)) {
+        setMobileMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [mobileMenuOpen]);
 
   const { wantToTry, tried, toggleWantToTry, toggleTried } = useBourbonLists();
   const { user, handleSignIn, handleSignOut, showRulesModal, setShowRulesModal } = useAuth();
-  const { reviews, addReview, getReviewsForBourbon } = useReviews(user);
+  const { reviews, addReview, editReview, deleteReview, getReviewsForBourbon } = useReviews(user);
   const { allBourbons, handleAddBourbon } = useCustomBourbons();
   const { toast, showToast } = useToast();
 
@@ -82,10 +98,18 @@ export default function App() {
     }
   };
 
+  const navigateTo = (newView: ViewState, id?: string, searchQuery?: string) => {
+    setView(newView);
+    if (id) setSelectedId(id);
+    if (searchQuery) setInitialSearchQuery(searchQuery);
+    setMobileMenuOpen(false);
+    window.scrollTo(0, 0);
+  };
+
   return (
     <div className="min-h-screen bg-[var(--color-vintage-bg)] text-[var(--color-vintage-text)] font-sans selection:bg-[#C89B3C]/30">
       {/* Navigation */}
-      <nav className="sticky top-0 z-50 bg-[var(--color-vintage-bg)]/95 backdrop-blur-md vintage-border-b">
+      <nav className="sticky top-0 z-50 bg-[var(--color-vintage-bg)]/95 backdrop-blur-md vintage-border-b" ref={mobileMenuRef}>
         <div className="max-w-5xl mx-auto px-4 h-20 flex items-center justify-between">
           <div
             className="flex items-center gap-3 cursor-pointer group"
@@ -96,7 +120,9 @@ export default function App() {
             </div>
             <span className="font-serif text-2xl font-bold tracking-widest text-[#EAE4D9] uppercase">Barrel Book</span>
           </div>
-          <div className="flex gap-6 items-center">
+
+          {/* Desktop nav */}
+          <div className="hidden md:flex gap-6 items-center">
             <button
               onClick={() => navigate('/catalog')}
               className={`text-xs font-semibold tracking-widest uppercase transition-colors ${location.pathname === '/catalog' ? 'text-[#C89B3C]' : 'text-[#EAE4D9]/60 hover:text-[#EAE4D9]'}`}
@@ -135,7 +161,60 @@ export default function App() {
               </button>
             )}
           </div>
+
+          {/* Mobile hamburger */}
+          <button
+            className="md:hidden text-[#EAE4D9]"
+            onClick={() => setMobileMenuOpen(prev => !prev)}
+          >
+            {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+          </button>
         </div>
+
+        {/* Mobile menu */}
+        {mobileMenuOpen && (
+          <div className="md:hidden bg-[#1A1816] vintage-border-b px-4 pb-4">
+            <button
+              onClick={() => navigateTo('catalog')}
+              className={`block w-full text-left text-sm font-semibold tracking-widest uppercase transition-colors py-4 border-b border-[var(--color-vintage-border)] ${view === 'catalog' ? 'text-[#C89B3C]' : 'text-[#EAE4D9]/60 hover:text-[#C89B3C]'}`}
+            >
+              Catalog
+            </button>
+            <button
+              onClick={() => navigateTo('lists')}
+              className={`block w-full text-left text-sm font-semibold tracking-widest uppercase transition-colors py-4 border-b border-[var(--color-vintage-border)] ${view === 'lists' ? 'text-[#C89B3C]' : 'text-[#EAE4D9]/60 hover:text-[#C89B3C]'}`}
+            >
+              My Lists
+            </button>
+            <button
+              onClick={() => { setShowSubmitModal(true); setMobileMenuOpen(false); }}
+              className="block w-full text-left text-sm font-semibold tracking-widest uppercase transition-colors py-4 border-b border-[var(--color-vintage-border)] text-[#EAE4D9]/60 hover:text-[#C89B3C]"
+            >
+              Submit
+            </button>
+            {user ? (
+              <div className="flex items-center justify-between py-4">
+                <div className="flex items-center gap-3">
+                  <img src={user.picture} alt={user.name} className="w-8 h-8 rounded-full vintage-border" referrerPolicy="no-referrer" />
+                  <span className="text-sm text-[#EAE4D9]/60">{user.name}</span>
+                </div>
+                <button
+                  onClick={() => { handleSignOut(); setMobileMenuOpen(false); }}
+                  className="text-sm font-semibold tracking-widest uppercase text-[#EAE4D9]/60 hover:text-[#C89B3C] transition-colors"
+                >
+                  Sign Out
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => { handleSignIn(); setMobileMenuOpen(false); }}
+                className="block w-full text-left text-sm font-semibold tracking-widest uppercase transition-colors py-4 text-[#C89B3C] hover:text-[#C89B3C]"
+              >
+                Sign In
+              </button>
+            )}
+          </div>
+        )}
       </nav>
 
       {/* Main Content */}
@@ -177,6 +256,54 @@ export default function App() {
             />
           } />
         </Routes>
+        {view === 'home' && (
+          <HomeView
+            onNavigate={navigateTo}
+            user={user}
+            bourbons={allBourbons}
+          />
+        )}
+        {view === 'catalog' && (
+          <CatalogView
+            onSelect={(id: string) => navigateTo('detail', id)}
+            wantToTry={wantToTry}
+            tried={tried}
+            toggleWantToTry={toggleWantToTryWithToast}
+            toggleTried={toggleTriedWithToast}
+            bourbons={allBourbons}
+            onOpenSubmit={() => setShowSubmitModal(true)}
+            onOpenScanner={() => setShowBarcodeScanner(true)}
+            initialSearchQuery={initialSearchQuery}
+            onConsumeSearchQuery={() => setInitialSearchQuery('')}
+          />
+        )}
+        {view === 'detail' && selectedId && (
+          <DetailView
+            id={selectedId}
+            onBack={() => navigateTo('catalog')}
+            onSelectSimilar={(id: string) => navigateTo('detail', id)}
+            wantToTry={wantToTry}
+            tried={tried}
+            toggleWantToTry={toggleWantToTryWithToast}
+            toggleTried={toggleTriedWithToast}
+            reviews={getReviewsForBourbon(selectedId)}
+            onAddReview={addReview}
+            onEditReview={editReview}
+            onDeleteReview={deleteReview}
+            user={user}
+            onAddReview={addReviewWithToast}
+            bourbons={allBourbons}
+          />
+        )}
+        {view === 'lists' && (
+          <ListsView
+            wantToTry={wantToTry}
+            tried={tried}
+            onSelect={(id: string) => navigateTo('detail', id)}
+            onNavigate={navigateTo}
+            bourbons={allBourbons}
+          />
+        )}
       </main>
 
       {/* Submit Bourbon Modal */}

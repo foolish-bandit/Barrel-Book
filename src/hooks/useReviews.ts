@@ -29,9 +29,17 @@ export function useReviews(user: User | null) {
     setReviews(prev => [newReview, ...prev]);
   }, [user]);
 
+  const editReview = useCallback((reviewId: string, updates: { rating?: number; text?: string }) => {
+    setReviews(prev => prev.map(r => r.id === reviewId ? { ...r, ...updates } : r));
+  }, []);
+
+  const deleteReview = useCallback((reviewId: string) => {
+    setReviews(prev => prev.filter(r => r.id !== reviewId));
+  }, []);
+
   const getReviewsForBourbon = useCallback((id: string): Review[] => {
     return reviews.filter(r => r.bourbonId === id);
   }, [reviews]);
 
-  return { reviews, addReview, getReviewsForBourbon };
+  return { reviews, addReview, editReview, deleteReview, getReviewsForBourbon };
 }

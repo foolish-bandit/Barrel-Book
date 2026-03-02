@@ -84,7 +84,7 @@ async function startServer() {
                     name: ${JSON.stringify(userData.name)},
                     picture: ${JSON.stringify(userData.picture)}
                   }
-                }, '*');
+                }, '${process.env.APP_URL}');
                 window.close();
               } else {
                 window.location.href = '/';
