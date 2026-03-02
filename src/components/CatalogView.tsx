@@ -1,11 +1,11 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Search, X, Loader2, Plus, Camera, AlertCircle, ChevronDown } from 'lucide-react';
 import { Bourbon } from '../data';
 import { GoogleGenAI, Type } from '@google/genai';
 import BourbonCard from './BourbonCard';
 
 interface CatalogViewProps {
-  onSelect: (id: string) => void;
   wantToTry: string[];
   tried: string[];
   toggleWantToTry: (id: string) => void;
@@ -13,10 +13,13 @@ interface CatalogViewProps {
   bourbons: Bourbon[];
   onOpenSubmit: () => void;
   onOpenScanner: () => void;
-  initialSearchQuery?: string;
-  onConsumeSearchQuery?: () => void;
 }
 
+export default function CatalogView({ wantToTry, tried, toggleWantToTry, toggleTried, bourbons, onOpenSubmit, onOpenScanner }: CatalogViewProps) {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const initialQuery = searchParams.get('q') || '';
+  const [searchQuery, setSearchQuery] = useState(initialQuery);
 const ITEMS_PER_PAGE = 24;
 
 export default function CatalogView({ onSelect, wantToTry, tried, toggleWantToTry, toggleTried, bourbons, onOpenSubmit, onOpenScanner, initialSearchQuery, onConsumeSearchQuery }: CatalogViewProps) {
@@ -96,11 +99,10 @@ export default function CatalogView({ onSelect, wantToTry, tried, toggleWantToTr
     setSearchFallback(false);
   };
 
-  // Auto-trigger search when navigated with an initial query from the home page
+  // Auto-trigger search when navigated with a ?q= query param
   useEffect(() => {
-    if (initialSearchQuery && !hasConsumedInitialQuery.current) {
+    if (initialQuery && !hasConsumedInitialQuery.current) {
       hasConsumedInitialQuery.current = true;
-      onConsumeSearchQuery?.();
       handleSearch({ preventDefault: () => {} } as React.FormEvent);
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -289,6 +291,41 @@ export default function CatalogView({ onSelect, wantToTry, tried, toggleWantToTr
           <p className="text-stone-400 animate-pulse">Consulting the experts...</p>
         </div>
       ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredBourbons.length > 0 ? (
+            filteredBourbons.map((bourbon: Bourbon) => (
+              <BourbonCard
+                key={bourbon.id}
+                bourbon={bourbon}
+                onClick={() => { navigate(`/bourbon/${bourbon.id}`); }}
+                isWanted={wantToTry.includes(bourbon.id)}
+                isTried={tried.includes(bourbon.id)}
+                onToggleWant={(e: React.MouseEvent) => { e.stopPropagation(); toggleWantToTry(bourbon.id); }}
+                onToggleTried={(e: React.MouseEvent) => { e.stopPropagation(); toggleTried(bourbon.id); }}
+              />
+            ))
+          ) : (
+            <div className="col-span-full text-center py-20 space-y-6">
+              <div className="w-16 h-16 rounded-full vintage-border flex items-center justify-center mx-auto text-[#EAE4D9]/40">
+                <Search size={24} />
+              </div>
+              <div>
+                <h3 className="text-xl font-serif text-[#EAE4D9] mb-2">No bourbons found</h3>
+                <p className="text-[#EAE4D9]/60 max-w-md mx-auto mb-6">We couldn't find any matches for your search criteria. Try adjusting your filters or search terms.</p>
+                <div className="flex flex-wrap items-center justify-center gap-4">
+                  <button
+                    onClick={onOpenSubmit}
+                    className="bg-[#C89B3C] text-[#141210] px-6 py-3 rounded font-semibold tracking-widest uppercase hover:bg-[#B08832] transition-colors inline-flex items-center gap-2"
+                  >
+                    <Plus size={16} /> Add it to the database
+                  </button>
+                  <button
+                    onClick={() => { setSearchQuery(''); setAiResults(null); setSearchFallback(false); setActiveCategory('All'); setMaxPrice(maxPriceInData); setMinProof(minProofInData); }}
+                    className="bg-transparent vintage-border hover:bg-[#C89B3C] hover:text-[#141210] hover:border-[#C89B3C] text-[#C89B3C] px-6 py-3 font-sans font-semibold tracking-widest uppercase text-xs transition-all duration-300"
+                  >
+                    Clear Filters
+                  </button>
+                </div>
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {paginatedBourbons.length > 0 ? (

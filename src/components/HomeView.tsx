@@ -1,25 +1,27 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Search, Star, Heart, List as ListIcon } from 'lucide-react';
-import { ViewState, User } from '../types';
+import { User } from '../types';
 import { Bourbon } from '../data';
 
 interface HomeViewProps {
-  onNavigate: (view: ViewState, id?: string, searchQuery?: string) => void;
   user: User | null;
   bourbons: Bourbon[];
 }
 
-export default function HomeView({ onNavigate, user, bourbons }: HomeViewProps) {
+export default function HomeView({ user, bourbons }: HomeViewProps) {
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    onNavigate('catalog', undefined, searchQuery.trim());
+    const q = searchQuery.trim();
+    navigate(q ? `/catalog?q=${encodeURIComponent(q)}` : '/catalog');
   };
 
   const handleRandom = () => {
     const randomBourbon = bourbons[Math.floor(Math.random() * bourbons.length)];
-    onNavigate('detail', randomBourbon.id);
+    navigate(`/bourbon/${randomBourbon.id}`);
   };
 
   return (
@@ -50,7 +52,7 @@ export default function HomeView({ onNavigate, user, bourbons }: HomeViewProps) 
         {/* Actions */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <button
-            onClick={() => onNavigate('catalog')}
+            onClick={() => navigate('/catalog')}
             className="p-6 bg-[#1A1816] vintage-border hover:border-[#C89B3C] hover:bg-[#1A1816]/80 transition-all group text-left"
           >
             <div className="mb-3 text-[#C89B3C] group-hover:scale-110 transition-transform origin-left">
@@ -73,7 +75,7 @@ export default function HomeView({ onNavigate, user, bourbons }: HomeViewProps) 
 
           {user ? (
             <button
-              onClick={() => onNavigate('lists')}
+              onClick={() => navigate('/lists')}
               className="p-6 bg-[#1A1816] vintage-border hover:border-[#C89B3C] hover:bg-[#1A1816]/80 transition-all group text-left"
             >
               <div className="mb-3 text-[#C89B3C] group-hover:scale-110 transition-transform origin-left">
@@ -84,7 +86,7 @@ export default function HomeView({ onNavigate, user, bourbons }: HomeViewProps) 
             </button>
           ) : (
              <button
-              onClick={() => onNavigate('lists')} // Will prompt sign in or show empty state
+              onClick={() => navigate('/lists')}
               className="p-6 bg-[#1A1816] vintage-border hover:border-[#C89B3C] hover:bg-[#1A1816]/80 transition-all group text-left opacity-60 hover:opacity-100"
             >
               <div className="mb-3 text-[#EAE4D9]/40 group-hover:text-[#C89B3C] transition-colors">

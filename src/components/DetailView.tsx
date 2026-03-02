@@ -1,4 +1,6 @@
 import React, { useState, useMemo } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { Star, Heart, CheckCircle, ChevronLeft } from 'lucide-react';
 import { Star, Heart, CheckCircle, ChevronLeft, Share2, Edit2, Trash2 } from 'lucide-react';
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, ResponsiveContainer } from 'recharts';
 import { Bourbon } from '../data';
@@ -8,14 +10,11 @@ import BourbonCard from './BourbonCard';
 import StatBox from './StatBox';
 
 interface DetailViewProps {
-  id: string;
-  onBack: () => void;
-  onSelectSimilar: (id: string) => void;
   wantToTry: string[];
   tried: string[];
   toggleWantToTry: (id: string) => void;
   toggleTried: (id: string) => void;
-  reviews: Review[];
+  getReviewsForBourbon: (id: string) => Review[];
   onAddReview: (review: Omit<Review, 'id' | 'date' | 'userId' | 'userName' | 'userPicture'>) => void;
   onEditReview: (reviewId: string, updates: { rating?: number; text?: string }) => void;
   onDeleteReview: (reviewId: string) => void;
@@ -23,6 +22,9 @@ interface DetailViewProps {
   bourbons: Bourbon[];
 }
 
+export default function DetailView({ wantToTry, tried, toggleWantToTry, toggleTried, getReviewsForBourbon, onAddReview, bourbons }: DetailViewProps) {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
 export default function DetailView({ id, onBack, onSelectSimilar, wantToTry, tried, toggleWantToTry, toggleTried, reviews, onAddReview, onEditReview, onDeleteReview, user, bourbons }: DetailViewProps) {
   const bourbon = bourbons.find((b: Bourbon) => b.id === id);
   const [rating, setRating] = useState(0);
@@ -33,7 +35,9 @@ export default function DetailView({ id, onBack, onSelectSimilar, wantToTry, tri
   const [editText, setEditText] = useState('');
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  if (!bourbon) return <div>Not found</div>;
+  if (!id || !bourbon) return <div>Not found</div>;
+
+  const reviews = getReviewsForBourbon(id);
 
   const handleShare = async () => {
     const shareData = {
@@ -97,7 +101,7 @@ export default function DetailView({ id, onBack, onSelectSimilar, wantToTry, tri
   return (
     <div className="space-y-12 animate-in slide-in-from-right-8 duration-500">
       <button
-        onClick={onBack}
+        onClick={() => navigate(-1)}
         className="flex items-center gap-3 text-[#EAE4D9]/60 hover:text-[#C89B3C] transition-colors group font-sans font-semibold tracking-widest uppercase text-xs"
       >
         <ChevronLeft size={16} className="group-hover:-translate-x-2 transition-transform" />
@@ -196,7 +200,7 @@ export default function DetailView({ id, onBack, onSelectSimilar, wantToTry, tri
             <BourbonCard
               key={b.id}
               bourbon={b}
-              onClick={() => onSelectSimilar(b.id)}
+              onClick={() => { navigate(`/bourbon/${b.id}`); }}
               isWanted={wantToTry.includes(b.id)}
               isTried={tried.includes(b.id)}
               onToggleWant={(e: React.MouseEvent) => { e.stopPropagation(); toggleWantToTry(b.id); }}

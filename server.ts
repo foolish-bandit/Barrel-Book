@@ -100,13 +100,20 @@ async function startServer() {
     }
   });
 
-  // Vite middleware for development
+  // Vite middleware for development, static files + SPA fallback for production
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: "spa",
     });
     app.use(vite.middlewares);
+  } else {
+    const path = await import("path");
+    const distPath = path.default.resolve(__dirname, "dist");
+    app.use(express.static(distPath));
+    app.get("*", (_req, res) => {
+      res.sendFile(path.default.join(distPath, "index.html"));
+    });
   }
 
   app.listen(PORT, "0.0.0.0", () => {
