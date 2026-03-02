@@ -19,6 +19,7 @@ import { useCustomBourbons } from './hooks/useCustomBourbons';
 export default function App() {
   const [view, setView] = useState<ViewState>('home');
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [initialSearchQuery, setInitialSearchQuery] = useState('');
   const [showSubmitModal, setShowSubmitModal] = useState(false);
   const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
   const [barcodePrefill, setBarcodePrefill] = useState<{ name: string; details: string; upc: string } | null>(null);
@@ -56,9 +57,10 @@ export default function App() {
     }
   };
 
-  const navigateTo = (newView: ViewState, id?: string) => {
+  const navigateTo = (newView: ViewState, id?: string, searchQuery?: string) => {
     setView(newView);
     if (id) setSelectedId(id);
+    if (searchQuery) setInitialSearchQuery(searchQuery);
     window.scrollTo(0, 0);
   };
 
@@ -137,6 +139,8 @@ export default function App() {
             bourbons={allBourbons}
             onOpenSubmit={() => setShowSubmitModal(true)}
             onOpenScanner={() => setShowBarcodeScanner(true)}
+            initialSearchQuery={initialSearchQuery}
+            onConsumeSearchQuery={() => setInitialSearchQuery('')}
           />
         )}
         {view === 'detail' && selectedId && (

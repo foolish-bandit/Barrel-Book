@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Search, X, Loader2, Plus, Camera, AlertCircle } from 'lucide-react';
 import { Bourbon } from '../data';
 import { GoogleGenAI, Type } from '@google/genai';
@@ -13,14 +13,17 @@ interface CatalogViewProps {
   bourbons: Bourbon[];
   onOpenSubmit: () => void;
   onOpenScanner: () => void;
+  initialSearchQuery?: string;
+  onConsumeSearchQuery?: () => void;
 }
 
-export default function CatalogView({ onSelect, wantToTry, tried, toggleWantToTry, toggleTried, bourbons, onOpenSubmit, onOpenScanner }: CatalogViewProps) {
-  const [searchQuery, setSearchQuery] = useState('');
+export default function CatalogView({ onSelect, wantToTry, tried, toggleWantToTry, toggleTried, bourbons, onOpenSubmit, onOpenScanner, initialSearchQuery, onConsumeSearchQuery }: CatalogViewProps) {
+  const [searchQuery, setSearchQuery] = useState(initialSearchQuery || '');
   const [isSearching, setIsSearching] = useState(false);
   const [aiResults, setAiResults] = useState<string[] | null>(null);
   const [searchFallback, setSearchFallback] = useState(false);
   const [activeCategory, setActiveCategory] = useState<string>('All');
+  const hasConsumedInitialQuery = useRef(false);
 
   const [maxPrice, setMaxPrice] = useState<number>(150);
   const [minProof, setMinProof] = useState<number>(80);
@@ -82,6 +85,15 @@ export default function CatalogView({ onSelect, wantToTry, tried, toggleWantToTr
     setAiResults(null);
     setSearchFallback(false);
   };
+
+  // Auto-trigger search when navigated with an initial query from the home page
+  useEffect(() => {
+    if (initialSearchQuery && !hasConsumedInitialQuery.current) {
+      hasConsumedInitialQuery.current = true;
+      onConsumeSearchQuery?.();
+      handleSearch({ preventDefault: () => {} } as React.FormEvent);
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const filteredBourbons = useMemo(() => {
     let result = bourbons;
