@@ -18,6 +18,9 @@ interface Review {
   rating: number;
   text: string;
   date: string;
+  userId?: string;
+  userName?: string;
+  userPicture?: string;
 }
 
 function getFlavorVector(profile: FlavorProfile): number[] {
@@ -146,7 +149,7 @@ export default function App() {
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
       const origin = event.origin;
-      if (!origin.endsWith('.run.app') && !origin.includes('localhost')) {
+      if (origin !== window.location.origin) {
         return;
       }
       if (event.data?.type === 'OAUTH_AUTH_SUCCESS') {
@@ -203,11 +206,16 @@ export default function App() {
     }
   };
 
-  const addReview = (review: Omit<Review, 'id' | 'date'>) => {
+  const addReview = (review: Omit<Review, 'id' | 'date' | 'userId' | 'userName' | 'userPicture'>) => {
     const newReview: Review = {
       ...review,
       id: Math.random().toString(36).substr(2, 9),
-      date: new Date().toISOString()
+      date: new Date().toISOString(),
+      ...(user && {
+        userId: user.id,
+        userName: user.name,
+        userPicture: user.picture,
+      }),
     };
     setReviews(prev => [newReview, ...prev]);
   };
@@ -1037,14 +1045,22 @@ function DetailView({ id, onBack, onSelectSimilar, wantToTry, tried, toggleWantT
             reviews.map((review: Review) => (
               <div key={review.id} className="bg-[#1A1816] vintage-border p-6 space-y-4">
                 <div className="flex items-center justify-between border-b border-[#EAE4D9]/10 pb-4">
-                  <div className="flex gap-1">
-                    {[1, 2, 3, 4, 5].map(star => (
-                      <Star 
-                        key={star} 
-                        size={16} 
-                        className={star <= review.rating ? 'fill-[#C89B3C] text-[#C89B3C]' : 'text-[#141210]'} 
-                      />
-                    ))}
+                  <div className="flex items-center gap-3">
+                    {review.userPicture && (
+                      <img src={review.userPicture} alt={review.userName || ''} className="w-6 h-6 rounded-full" referrerPolicy="no-referrer" />
+                    )}
+                    {review.userName && (
+                      <span className="text-sm font-sans text-[#EAE4D9]/60">{review.userName}</span>
+                    )}
+                    <div className="flex gap-1">
+                      {[1, 2, 3, 4, 5].map(star => (
+                        <Star
+                          key={star}
+                          size={16}
+                          className={star <= review.rating ? 'fill-[#C89B3C] text-[#C89B3C]' : 'text-[#141210]'}
+                        />
+                      ))}
+                    </div>
                   </div>
                   <span className="micro-label text-[#EAE4D9]/40">{new Date(review.date).toLocaleDateString()}</span>
                 </div>
