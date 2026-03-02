@@ -28,6 +28,19 @@ export function useAuth() {
         return;
       }
       if (event.data?.type === 'OAUTH_AUTH_SUCCESS') {
+        // Verify CSRF state parameter
+        const expectedState = sessionStorage.getItem('oauth_state');
+        const receivedState = event.data.state;
+
+        if (!expectedState || !receivedState || expectedState !== receivedState) {
+          console.error('OAuth state mismatch - possible CSRF attack');
+          sessionStorage.removeItem('oauth_state');
+          return;
+        }
+
+        // State verified, clean up
+        sessionStorage.removeItem('oauth_state');
+
         const newUser = event.data.user;
         setUser(newUser);
 
@@ -45,7 +58,15 @@ export function useAuth() {
 
   const handleSignIn = async () => {
     try {
-      const response = await fetch('/api/auth/url');
+      // Generate cryptographically random state for CSRF protection
+      const stateArray = new Uint8Array(16);
+      crypto.getRandomValues(stateArray);
+      const state = Array.from(stateArray, b => b.toString(16).padStart(2, '0')).join('');
+
+      // Store state in sessionStorage for verification after callback
+      sessionStorage.setItem('oauth_state', state);
+
+      const response = await fetch(`/api/auth/url?state=${encodeURIComponent(state)}`);
       if (!response.ok) throw new Error('Failed to get auth URL');
       const { url } = await response.json();
 
