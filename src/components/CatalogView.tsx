@@ -293,12 +293,20 @@ export default function CatalogView({ onSelect, wantToTry, tried, toggleWantToTr
               <div>
                 <h3 className="text-xl font-serif text-[#EAE4D9] mb-2">No bourbons found</h3>
                 <p className="text-[#EAE4D9]/60 max-w-md mx-auto mb-6">We couldn't find any matches for your search criteria. Try adjusting your filters or search terms.</p>
-                <button
-                  onClick={onOpenSubmit}
-                  className="bg-[#C89B3C] text-[#141210] px-6 py-3 rounded font-semibold tracking-widest uppercase hover:bg-[#B08832] transition-colors inline-flex items-center gap-2"
-                >
-                  <Plus size={16} /> Add it to the database
-                </button>
+                <div className="flex flex-wrap items-center justify-center gap-4">
+                  <button
+                    onClick={onOpenSubmit}
+                    className="bg-[#C89B3C] text-[#141210] px-6 py-3 rounded font-semibold tracking-widest uppercase hover:bg-[#B08832] transition-colors inline-flex items-center gap-2"
+                  >
+                    <Plus size={16} /> Add it to the database
+                  </button>
+                  <button
+                    onClick={() => { setSearchQuery(''); setAiResults(null); setSearchFallback(false); setActiveCategory('All'); setMaxPrice(maxPriceInData); setMinProof(minProofInData); }}
+                    className="bg-transparent vintage-border hover:bg-[#C89B3C] hover:text-[#141210] hover:border-[#C89B3C] text-[#C89B3C] px-6 py-3 font-sans font-semibold tracking-widest uppercase text-xs transition-all duration-300"
+                  >
+                    Clear Filters
+                  </button>
+                </div>
               </div>
             </div>
           )}

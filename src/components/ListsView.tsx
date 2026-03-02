@@ -7,9 +7,10 @@ interface ListsViewProps {
   tried: string[];
   onSelect: (id: string) => void;
   bourbons: Bourbon[];
+  onNavigateToCatalog: () => void;
 }
 
-export default function ListsView({ wantToTry, tried, onSelect, bourbons }: ListsViewProps) {
+export default function ListsView({ wantToTry, tried, onSelect, bourbons, onNavigateToCatalog }: ListsViewProps) {
   const wantBourbons = wantToTry.map((id) => bourbons.find((b) => b.id === id)).filter(Boolean) as Bourbon[];
   const triedBourbons = tried.map((id) => bourbons.find((b) => b.id === id)).filter(Boolean) as Bourbon[];
 
@@ -29,6 +30,14 @@ export default function ListsView({ wantToTry, tried, onSelect, bourbons }: List
         {wantBourbons.length === 0 ? (
           <div className="bg-stone-900 border border-stone-800 border-dashed rounded-2xl p-12 text-center text-stone-500">
             Your wishlist is empty. Explore the catalog to find new pours.
+            <div>
+              <button
+                onClick={onNavigateToCatalog}
+                className="mt-4 bg-transparent vintage-border hover:bg-[#C89B3C] hover:text-[#141210] hover:border-[#C89B3C] text-[#C89B3C] px-6 py-3 font-sans font-semibold tracking-widest uppercase text-xs transition-all duration-300"
+              >
+                Browse the Catalog
+              </button>
+            </div>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -48,6 +57,14 @@ export default function ListsView({ wantToTry, tried, onSelect, bourbons }: List
         {triedBourbons.length === 0 ? (
           <div className="bg-stone-900 border border-stone-800 border-dashed rounded-2xl p-12 text-center text-stone-500">
             You haven't marked any bourbons as tried yet.
+            <div>
+              <button
+                onClick={onNavigateToCatalog}
+                className="mt-4 bg-transparent vintage-border hover:bg-[#C89B3C] hover:text-[#141210] hover:border-[#C89B3C] text-[#C89B3C] px-6 py-3 font-sans font-semibold tracking-widest uppercase text-xs transition-all duration-300"
+              >
+                Explore Bourbons
+              </button>
+            </div>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

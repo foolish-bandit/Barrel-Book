@@ -184,6 +184,7 @@ export default function App() {
             tried={tried}
             onSelect={(id: string) => navigateTo('detail', id)}
             bourbons={allBourbons}
+            onNavigateToCatalog={() => navigateTo('catalog')}
           />
         )}
       </main>
