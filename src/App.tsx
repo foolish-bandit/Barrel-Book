@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Search, Star, Heart, CheckCircle, ChevronLeft, List as ListIcon, X, Loader2, MessageSquare, Plus } from 'lucide-react';
+import { Search, Star, Heart, CheckCircle, ChevronLeft, List as ListIcon, X, Loader2, MessageSquare, Plus, Camera } from 'lucide-react';
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, ResponsiveContainer } from 'recharts';
 import { BOURBONS, Bourbon, FlavorProfile } from './data';
 import SubmitBourbonModal from './components/SubmitBourbonModal';
+import BarcodeScanner, { BarcodeScanResult } from './components/BarcodeScanner';
 import { normalizeBourbonName } from './utils/stringUtils';
+import { saveUpcMapping } from './services/upcService';
 import { GoogleGenAI, Type } from '@google/genai';
 
 // --- Types & Helpers ---
@@ -64,6 +66,8 @@ export default function App() {
   const [user, setUser] = useState<any>(null);
   const [showRulesModal, setShowRulesModal] = useState(false);
   const [showSubmitModal, setShowSubmitModal] = useState(false);
+  const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
+  const [barcodePrefill, setBarcodePrefill] = useState<{ name: string; details: string; upc: string } | null>(null);
   const [customBourbons, setCustomBourbons] = useState<Bourbon[]>([]);
 
   // Load from localStorage
@@ -208,6 +212,27 @@ export default function App() {
     setReviews(prev => [newReview, ...prev]);
   };
 
+  const handleBarcodeScanResult = (result: BarcodeScanResult) => {
+    setShowBarcodeScanner(false);
+    if (result.type === 'match') {
+      navigateTo('detail', result.bourbonId);
+    } else if (result.type === 'prefill') {
+      const details = [result.brand, result.description].filter(Boolean).join('. ');
+      setBarcodePrefill({ name: result.productName, details, upc: result.upc });
+      setShowSubmitModal(true);
+    } else if (result.type === 'manual-entry') {
+      setBarcodePrefill({ name: '', details: '', upc: result.upc });
+      setShowSubmitModal(true);
+    }
+  };
+
+  const handleAddBourbonWithUpc = (newBourbon: Bourbon, upc?: string) => {
+    handleAddBourbon(newBourbon);
+    if (upc) {
+      saveUpcMapping(upc, newBourbon.id);
+    }
+  };
+
   const navigateTo = (newView: ViewState, id?: string) => {
     setView(newView);
     if (id) setSelectedId(id);
@@ -280,14 +305,15 @@ export default function App() {
           />
         )}
         {view === 'catalog' && (
-          <CatalogView 
-            onSelect={(id: string) => navigateTo('detail', id)} 
+          <CatalogView
+            onSelect={(id: string) => navigateTo('detail', id)}
             wantToTry={wantToTry}
             tried={tried}
             toggleWantToTry={toggleWantToTry}
             toggleTried={toggleTried}
             bourbons={allBourbons}
             onOpenSubmit={() => setShowSubmitModal(true)}
+            onOpenScanner={() => setShowBarcodeScanner(true)}
           />
         )}
         {view === 'detail' && selectedId && (
@@ -316,14 +342,35 @@ export default function App() {
 
       {/* Submit Bourbon Modal */}
       {showSubmitModal && (
-        <SubmitBourbonModal 
-          onClose={() => setShowSubmitModal(false)}
-          onSubmit={handleAddBourbon}
+        <SubmitBourbonModal
+          onClose={() => { setShowSubmitModal(false); setBarcodePrefill(null); }}
+          onSubmit={(bourbon) => {
+            handleAddBourbonWithUpc(bourbon, barcodePrefill?.upc);
+            setBarcodePrefill(null);
+          }}
           onSelectExisting={(id) => {
+            if (barcodePrefill?.upc) saveUpcMapping(barcodePrefill.upc, id);
             setShowSubmitModal(false);
+            setBarcodePrefill(null);
             navigateTo('detail', id);
           }}
           existingBourbons={allBourbons}
+          prefillName={barcodePrefill?.name}
+          prefillDetails={barcodePrefill?.details}
+          onOpenScanner={() => {
+            setShowSubmitModal(false);
+            setBarcodePrefill(null);
+            setShowBarcodeScanner(true);
+          }}
+        />
+      )}
+
+      {/* Barcode Scanner Modal */}
+      {showBarcodeScanner && (
+        <BarcodeScanner
+          onResult={handleBarcodeScanResult}
+          onClose={() => setShowBarcodeScanner(false)}
+          bourbons={allBourbons}
         />
       )}
 
@@ -485,7 +532,7 @@ function HomeView({ onNavigate, user, bourbons }: any) {
 
 // --- Catalog View ---
 
-function CatalogView({ onSelect, wantToTry, tried, toggleWantToTry, toggleTried, bourbons, onOpenSubmit }: any) {
+function CatalogView({ onSelect, wantToTry, tried, toggleWantToTry, toggleTried, bourbons, onOpenSubmit, onOpenScanner }: any) {
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [aiResults, setAiResults] = useState<string[] | null>(null);
@@ -598,17 +645,27 @@ function CatalogView({ onSelect, wantToTry, tried, toggleWantToTry, toggleTried,
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search..."
-              className="w-full bg-[#141210] border border-[#EAE4D9]/20 py-2 pl-10 pr-10 text-[#EAE4D9] placeholder-[#EAE4D9]/40 focus:outline-none focus:border-[#C89B3C] transition-all font-serif italic text-sm rounded-sm"
+              className="w-full bg-[#141210] border border-[#EAE4D9]/20 py-2 pl-10 pr-20 text-[#EAE4D9] placeholder-[#EAE4D9]/40 focus:outline-none focus:border-[#C89B3C] transition-all font-serif italic text-sm rounded-sm"
             />
-            {searchQuery && (
-              <button 
-                type="button" 
-                onClick={clearSearch}
-                className="absolute inset-y-0 right-0 flex items-center pr-3 text-[#EAE4D9]/40 hover:text-[#C89B3C] transition-colors"
+            <div className="absolute inset-y-0 right-0 flex items-center gap-1 pr-2">
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={clearSearch}
+                  className="flex items-center p-1 text-[#EAE4D9]/40 hover:text-[#C89B3C] transition-colors"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={onOpenScanner}
+                className="flex items-center p-1 text-[#EAE4D9]/40 hover:text-[#C89B3C] transition-colors"
+                title="Scan barcode"
               >
-                <X className="h-4 w-4" />
+                <Camera className="h-4 w-4" />
               </button>
-            )}
+            </div>
           </form>
         </div>
 
