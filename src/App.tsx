@@ -1,10 +1,10 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
+import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import { List as ListIcon, X, Plus } from 'lucide-react';
 import { Bourbon } from './data';
 import SubmitBourbonModal from './components/SubmitBourbonModal';
 import BarcodeScanner, { BarcodeScanResult } from './components/BarcodeScanner';
 import { saveUpcMapping } from './services/upcService';
-import { ViewState } from './types';
 import HomeView from './components/HomeView';
 import CatalogView from './components/CatalogView';
 import DetailView from './components/DetailView';
@@ -19,9 +19,9 @@ import { useToast } from './hooks/useToast';
 // --- Main App Component ---
 
 export default function App() {
-  const [view, setView] = useState<ViewState>('home');
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [initialSearchQuery, setInitialSearchQuery] = useState('');
+  const navigate = useNavigate();
+  const location = useLocation();
+
   const [showSubmitModal, setShowSubmitModal] = useState(false);
   const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
   const [barcodePrefill, setBarcodePrefill] = useState<{ name: string; details: string; upc: string } | null>(null);
@@ -31,6 +31,11 @@ export default function App() {
   const { reviews, addReview, getReviewsForBourbon } = useReviews(user);
   const { allBourbons, handleAddBourbon } = useCustomBourbons();
   const { toast, showToast } = useToast();
+
+  // Scroll to top on route change
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [location.pathname]);
 
   const toggleWantToTryWithToast = useCallback((id: string) => {
     const removing = wantToTry.includes(id);
@@ -51,16 +56,15 @@ export default function App() {
 
   const onAddBourbon = (newBourbon: Bourbon) => {
     const resultId = handleAddBourbon(newBourbon);
-    setSelectedId(resultId);
     setShowSubmitModal(false);
-    setView('detail');
+    navigate(`/bourbon/${resultId}`);
     showToast('Bourbon submitted');
   };
 
   const handleBarcodeScanResult = (result: BarcodeScanResult) => {
     setShowBarcodeScanner(false);
     if (result.type === 'match') {
-      navigateTo('detail', result.bourbonId);
+      navigate(`/bourbon/${result.bourbonId}`);
     } else if (result.type === 'prefill') {
       const details = [result.brand, result.description].filter(Boolean).join('. ');
       setBarcodePrefill({ name: result.productName, details, upc: result.upc });
@@ -78,13 +82,6 @@ export default function App() {
     }
   };
 
-  const navigateTo = (newView: ViewState, id?: string, searchQuery?: string) => {
-    setView(newView);
-    if (id) setSelectedId(id);
-    if (searchQuery) setInitialSearchQuery(searchQuery);
-    window.scrollTo(0, 0);
-  };
-
   return (
     <div className="min-h-screen bg-[var(--color-vintage-bg)] text-[var(--color-vintage-text)] font-sans selection:bg-[#C89B3C]/30">
       {/* Navigation */}
@@ -92,7 +89,7 @@ export default function App() {
         <div className="max-w-5xl mx-auto px-4 h-20 flex items-center justify-between">
           <div
             className="flex items-center gap-3 cursor-pointer group"
-            onClick={() => navigateTo('home')}
+            onClick={() => navigate('/')}
           >
             <div className="w-10 h-10 rounded-full vintage-border flex items-center justify-center group-hover:border-[#C89B3C] transition-colors overflow-hidden p-1">
               <img src="/logo.svg" alt="Barrel Book Logo" className="w-full h-full object-contain" />
@@ -101,14 +98,14 @@ export default function App() {
           </div>
           <div className="flex gap-6 items-center">
             <button
-              onClick={() => navigateTo('catalog')}
-              className={`text-xs font-semibold tracking-widest uppercase transition-colors ${view === 'catalog' ? 'text-[#C89B3C]' : 'text-[#EAE4D9]/60 hover:text-[#EAE4D9]'}`}
+              onClick={() => navigate('/catalog')}
+              className={`text-xs font-semibold tracking-widest uppercase transition-colors ${location.pathname === '/catalog' ? 'text-[#C89B3C]' : 'text-[#EAE4D9]/60 hover:text-[#EAE4D9]'}`}
             >
               Catalog
             </button>
             <button
-              onClick={() => navigateTo('lists')}
-              className={`text-xs font-semibold tracking-widest uppercase transition-colors flex items-center gap-2 ${view === 'lists' ? 'text-[#C89B3C]' : 'text-[#EAE4D9]/60 hover:text-[#EAE4D9]'}`}
+              onClick={() => navigate('/lists')}
+              className={`text-xs font-semibold tracking-widest uppercase transition-colors flex items-center gap-2 ${location.pathname === '/lists' ? 'text-[#C89B3C]' : 'text-[#EAE4D9]/60 hover:text-[#EAE4D9]'}`}
             >
               <ListIcon size={14} /> My Lists
             </button>
@@ -143,50 +140,43 @@ export default function App() {
 
       {/* Main Content */}
       <main className="max-w-5xl mx-auto px-4 py-8">
-        {view === 'home' && (
-          <HomeView
-            onNavigate={navigateTo}
-            user={user}
-            bourbons={allBourbons}
-          />
-        )}
-        {view === 'catalog' && (
-          <CatalogView
-            onSelect={(id: string) => navigateTo('detail', id)}
-            wantToTry={wantToTry}
-            tried={tried}
-            toggleWantToTry={toggleWantToTryWithToast}
-            toggleTried={toggleTriedWithToast}
-            bourbons={allBourbons}
-            onOpenSubmit={() => setShowSubmitModal(true)}
-            onOpenScanner={() => setShowBarcodeScanner(true)}
-            initialSearchQuery={initialSearchQuery}
-            onConsumeSearchQuery={() => setInitialSearchQuery('')}
-          />
-        )}
-        {view === 'detail' && selectedId && (
-          <DetailView
-            id={selectedId}
-            onBack={() => navigateTo('catalog')}
-            onSelectSimilar={(id: string) => navigateTo('detail', id)}
-            wantToTry={wantToTry}
-            tried={tried}
-            toggleWantToTry={toggleWantToTryWithToast}
-            toggleTried={toggleTriedWithToast}
-            reviews={getReviewsForBourbon(selectedId)}
-            onAddReview={addReviewWithToast}
-            bourbons={allBourbons}
-          />
-        )}
-        {view === 'lists' && (
-          <ListsView
-            wantToTry={wantToTry}
-            tried={tried}
-            onSelect={(id: string) => navigateTo('detail', id)}
-            bourbons={allBourbons}
-            onNavigateToCatalog={() => navigateTo('catalog')}
-          />
-        )}
+        <Routes>
+          <Route path="/" element={
+            <HomeView
+              user={user}
+              bourbons={allBourbons}
+            />
+          } />
+          <Route path="/catalog" element={
+            <CatalogView
+              wantToTry={wantToTry}
+              tried={tried}
+              toggleWantToTry={toggleWantToTryWithToast}
+              toggleTried={toggleTriedWithToast}
+              bourbons={allBourbons}
+              onOpenSubmit={() => setShowSubmitModal(true)}
+              onOpenScanner={() => setShowBarcodeScanner(true)}
+            />
+          } />
+          <Route path="/bourbon/:id" element={
+            <DetailView
+              wantToTry={wantToTry}
+              tried={tried}
+              toggleWantToTry={toggleWantToTryWithToast}
+              toggleTried={toggleTriedWithToast}
+              getReviewsForBourbon={getReviewsForBourbon}
+              onAddReview={addReviewWithToast}
+              bourbons={allBourbons}
+            />
+          } />
+          <Route path="/lists" element={
+            <ListsView
+              wantToTry={wantToTry}
+              tried={tried}
+              bourbons={allBourbons}
+            />
+          } />
+        </Routes>
       </main>
 
       {/* Submit Bourbon Modal */}
@@ -201,7 +191,7 @@ export default function App() {
             if (barcodePrefill?.upc) saveUpcMapping(barcodePrefill.upc, id);
             setShowSubmitModal(false);
             setBarcodePrefill(null);
-            navigateTo('detail', id);
+            navigate(`/bourbon/${id}`);
           }}
           existingBourbons={allBourbons}
           prefillName={barcodePrefill?.name}

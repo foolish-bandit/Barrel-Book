@@ -1,11 +1,11 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Search, X, Loader2, Plus, Camera, AlertCircle, ChevronDown } from 'lucide-react';
 import { Bourbon } from '../data';
 import { GoogleGenAI, Type } from '@google/genai';
 import BourbonCard from './BourbonCard';
 
 interface CatalogViewProps {
-  onSelect: (id: string) => void;
   wantToTry: string[];
   tried: string[];
   toggleWantToTry: (id: string) => void;
@@ -13,12 +13,13 @@ interface CatalogViewProps {
   bourbons: Bourbon[];
   onOpenSubmit: () => void;
   onOpenScanner: () => void;
-  initialSearchQuery?: string;
-  onConsumeSearchQuery?: () => void;
 }
 
-export default function CatalogView({ onSelect, wantToTry, tried, toggleWantToTry, toggleTried, bourbons, onOpenSubmit, onOpenScanner, initialSearchQuery, onConsumeSearchQuery }: CatalogViewProps) {
-  const [searchQuery, setSearchQuery] = useState(initialSearchQuery || '');
+export default function CatalogView({ wantToTry, tried, toggleWantToTry, toggleTried, bourbons, onOpenSubmit, onOpenScanner }: CatalogViewProps) {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const initialQuery = searchParams.get('q') || '';
+  const [searchQuery, setSearchQuery] = useState(initialQuery);
   const [isSearching, setIsSearching] = useState(false);
   const [aiResults, setAiResults] = useState<string[] | null>(null);
   const [searchFallback, setSearchFallback] = useState(false);
@@ -92,11 +93,10 @@ export default function CatalogView({ onSelect, wantToTry, tried, toggleWantToTr
     setSearchFallback(false);
   };
 
-  // Auto-trigger search when navigated with an initial query from the home page
+  // Auto-trigger search when navigated with a ?q= query param
   useEffect(() => {
-    if (initialSearchQuery && !hasConsumedInitialQuery.current) {
+    if (initialQuery && !hasConsumedInitialQuery.current) {
       hasConsumedInitialQuery.current = true;
-      onConsumeSearchQuery?.();
       handleSearch({ preventDefault: () => {} } as React.FormEvent);
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -278,7 +278,7 @@ export default function CatalogView({ onSelect, wantToTry, tried, toggleWantToTr
               <BourbonCard
                 key={bourbon.id}
                 bourbon={bourbon}
-                onClick={() => onSelect(bourbon.id)}
+                onClick={() => { navigate(`/bourbon/${bourbon.id}`); }}
                 isWanted={wantToTry.includes(bourbon.id)}
                 isTried={tried.includes(bourbon.id)}
                 onToggleWant={(e: React.MouseEvent) => { e.stopPropagation(); toggleWantToTry(bourbon.id); }}
