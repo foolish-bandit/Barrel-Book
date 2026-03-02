@@ -39,7 +39,7 @@ export default function App() {
 
   const { wantToTry, tried, toggleWantToTry, toggleTried } = useBourbonLists();
   const { user, handleSignIn, handleSignOut, showRulesModal, setShowRulesModal } = useAuth();
-  const { reviews, addReview, getReviewsForBourbon } = useReviews(user);
+  const { reviews, addReview, editReview, deleteReview, getReviewsForBourbon } = useReviews(user);
   const { allBourbons, handleAddBourbon } = useCustomBourbons();
 
   const onAddBourbon = (newBourbon: Bourbon) => {
@@ -223,6 +223,9 @@ export default function App() {
             toggleTried={toggleTried}
             reviews={getReviewsForBourbon(selectedId)}
             onAddReview={addReview}
+            onEditReview={editReview}
+            onDeleteReview={deleteReview}
+            user={user}
             bourbons={allBourbons}
           />
         )}
