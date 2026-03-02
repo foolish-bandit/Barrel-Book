@@ -1,8 +1,8 @@
 import React, { useState, useMemo } from 'react';
-import { Star, Heart, CheckCircle, ChevronLeft } from 'lucide-react';
+import { Star, Heart, CheckCircle, ChevronLeft, Share2, Edit2, Trash2 } from 'lucide-react';
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, ResponsiveContainer } from 'recharts';
 import { Bourbon } from '../data';
-import { Review } from '../types';
+import { Review, User } from '../types';
 import { getSimilarBourbons } from '../utils/bourbonUtils';
 import BourbonCard from './BourbonCard';
 import StatBox from './StatBox';
@@ -17,15 +17,60 @@ interface DetailViewProps {
   toggleTried: (id: string) => void;
   reviews: Review[];
   onAddReview: (review: Omit<Review, 'id' | 'date' | 'userId' | 'userName' | 'userPicture'>) => void;
+  onEditReview: (reviewId: string, updates: { rating?: number; text?: string }) => void;
+  onDeleteReview: (reviewId: string) => void;
+  user: User | null;
   bourbons: Bourbon[];
 }
 
-export default function DetailView({ id, onBack, onSelectSimilar, wantToTry, tried, toggleWantToTry, toggleTried, reviews, onAddReview, bourbons }: DetailViewProps) {
+export default function DetailView({ id, onBack, onSelectSimilar, wantToTry, tried, toggleWantToTry, toggleTried, reviews, onAddReview, onEditReview, onDeleteReview, user, bourbons }: DetailViewProps) {
   const bourbon = bourbons.find((b: Bourbon) => b.id === id);
   const [rating, setRating] = useState(0);
   const [reviewText, setReviewText] = useState('');
+  const [copied, setCopied] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editRating, setEditRating] = useState(0);
+  const [editText, setEditText] = useState('');
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   if (!bourbon) return <div>Not found</div>;
+
+  const handleShare = async () => {
+    const shareData = {
+      title: bourbon.name,
+      text: `Check out ${bourbon.name} on Barrel Book`,
+      url: window.location.href,
+    };
+    if (navigator.share) {
+      try { await navigator.share(shareData); } catch { /* user cancelled */ }
+    } else {
+      await navigator.clipboard.writeText(window.location.href);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  const startEditing = (review: Review) => {
+    setEditingId(review.id);
+    setEditRating(review.rating);
+    setEditText(review.text);
+  };
+
+  const saveEdit = () => {
+    if (!editingId || editRating === 0) return;
+    onEditReview(editingId, { rating: editRating, text: editText });
+    setEditingId(null);
+  };
+
+  const confirmDelete = (reviewId: string) => {
+    onDeleteReview(reviewId);
+    setDeletingId(null);
+  };
+
+  const isOwnReview = (review: Review) => {
+    if (user) return review.userId === user.id;
+    return !review.userId;
+  };
 
   const similar = useMemo(() => getSimilarBourbons(bourbon, bourbons), [bourbon, bourbons]);
   const isWanted = wantToTry.includes(id);
@@ -80,7 +125,7 @@ export default function DetailView({ id, onBack, onSelectSimilar, wantToTry, tri
               </div>
             </div>
             <p className="micro-label text-[#C89B3C] mb-6">{bourbon.distillery}</p>
-            <div className="grid grid-cols-2 gap-4 max-w-sm">
+            <div className="grid grid-cols-3 gap-4 max-w-md">
               <button
                 onClick={() => toggleWantToTry(id)}
                 className={`flex items-center justify-center gap-3 py-4 vintage-border transition-all duration-300 font-sans font-semibold tracking-widest uppercase text-xs ${isWanted ? 'bg-[#C89B3C]/10 border-[#C89B3C]/50 text-[#C89B3C]' : 'bg-transparent text-[#EAE4D9]/60 hover:text-[#C89B3C] hover:border-[#C89B3C]/30'}`}
@@ -94,6 +139,13 @@ export default function DetailView({ id, onBack, onSelectSimilar, wantToTry, tri
               >
                 <CheckCircle size={16} className={isTried ? "fill-current" : ""} />
                 {isTried ? 'Tried It' : 'Mark Tried'}
+              </button>
+              <button
+                onClick={handleShare}
+                className="flex items-center justify-center gap-3 py-4 vintage-border transition-all duration-300 font-sans font-semibold tracking-widest uppercase text-xs bg-transparent text-[#EAE4D9]/60 hover:text-[#C89B3C] hover:border-[#C89B3C]/30"
+              >
+                <Share2 size={16} />
+                {copied ? 'Copied!' : 'Share'}
               </button>
             </div>
           </div>
@@ -204,27 +256,106 @@ export default function DetailView({ id, onBack, onSelectSimilar, wantToTry, tri
           ) : (
             reviews.map((review: Review) => (
               <div key={review.id} className="bg-[#1A1816] vintage-border p-6 space-y-4">
-                <div className="flex items-center justify-between border-b border-[#EAE4D9]/10 pb-4">
-                  <div className="flex items-center gap-3">
-                    {review.userPicture && (
-                      <img src={review.userPicture} alt={review.userName || ''} className="w-6 h-6 rounded-full" referrerPolicy="no-referrer" />
-                    )}
-                    {review.userName && (
-                      <span className="text-sm font-sans text-[#EAE4D9]/60">{review.userName}</span>
-                    )}
-                    <div className="flex gap-1">
+                {editingId === review.id ? (
+                  <div className="space-y-6">
+                    <div className="flex gap-3">
                       {[1, 2, 3, 4, 5].map(star => (
-                        <Star
+                        <button
                           key={star}
-                          size={16}
-                          className={star <= review.rating ? 'fill-[#C89B3C] text-[#C89B3C]' : 'text-[#141210]'}
-                        />
+                          type="button"
+                          onClick={() => setEditRating(star)}
+                          className="focus:outline-none transition-transform hover:scale-110"
+                        >
+                          <Star
+                            size={32}
+                            className={`transition-colors ${star <= editRating ? 'fill-[#C89B3C] text-[#C89B3C]' : 'text-[#141210] hover:text-[#C89B3C]/50'}`}
+                          />
+                        </button>
                       ))}
                     </div>
+                    <textarea
+                      value={editText}
+                      onChange={(e) => setEditText(e.target.value)}
+                      className="w-full bg-[#141210] vintage-border p-5 text-[#EAE4D9] placeholder-[#EAE4D9]/30 focus:outline-none focus:border-[#C89B3C] min-h-[120px] font-serif italic text-lg resize-none"
+                    />
+                    <div className="flex gap-4">
+                      <button
+                        onClick={saveEdit}
+                        disabled={editRating === 0}
+                        className="px-6 py-2 bg-transparent vintage-border hover:bg-[#C89B3C] hover:text-[#141210] hover:border-[#C89B3C] disabled:opacity-50 text-[#C89B3C] font-sans font-semibold tracking-widest uppercase text-xs transition-all duration-300"
+                      >
+                        Save
+                      </button>
+                      <button
+                        onClick={() => setEditingId(null)}
+                        className="px-6 py-2 text-[#EAE4D9]/60 hover:text-[#EAE4D9] font-sans font-semibold tracking-widest uppercase text-xs transition-colors"
+                      >
+                        Cancel
+                      </button>
+                    </div>
                   </div>
-                  <span className="micro-label text-[#EAE4D9]/40">{new Date(review.date).toLocaleDateString()}</span>
-                </div>
-                {review.text && <p className="text-[#EAE4D9]/80 font-serif italic leading-relaxed">{review.text}</p>}
+                ) : (
+                  <>
+                    <div className="flex items-center justify-between border-b border-[#EAE4D9]/10 pb-4">
+                      <div className="flex items-center gap-3">
+                        {review.userPicture && (
+                          <img src={review.userPicture} alt={review.userName || ''} className="w-6 h-6 rounded-full" referrerPolicy="no-referrer" />
+                        )}
+                        {review.userName && (
+                          <span className="text-sm font-sans text-[#EAE4D9]/60">{review.userName}</span>
+                        )}
+                        <div className="flex gap-1">
+                          {[1, 2, 3, 4, 5].map(star => (
+                            <Star
+                              key={star}
+                              size={16}
+                              className={star <= review.rating ? 'fill-[#C89B3C] text-[#C89B3C]' : 'text-[#141210]'}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className="micro-label text-[#EAE4D9]/40">{new Date(review.date).toLocaleDateString()}</span>
+                        {isOwnReview(review) && (
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => startEditing(review)}
+                              className="text-[#EAE4D9]/30 hover:text-[#C89B3C] transition-colors"
+                              title="Edit review"
+                            >
+                              <Edit2 size={14} />
+                            </button>
+                            <button
+                              onClick={() => setDeletingId(review.id)}
+                              className="text-[#EAE4D9]/30 hover:text-[#C89B3C] transition-colors"
+                              title="Delete review"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    {deletingId === review.id && (
+                      <div className="flex items-center gap-4 py-2">
+                        <span className="text-sm font-serif italic text-[#EAE4D9]/60">Delete this note?</span>
+                        <button
+                          onClick={() => confirmDelete(review.id)}
+                          className="px-4 py-1 text-xs font-semibold tracking-widest uppercase vintage-border text-[#C89B3C] hover:bg-[#C89B3C] hover:text-[#141210] hover:border-[#C89B3C] transition-colors"
+                        >
+                          Yes
+                        </button>
+                        <button
+                          onClick={() => setDeletingId(null)}
+                          className="px-4 py-1 text-xs font-semibold tracking-widest uppercase text-[#EAE4D9]/60 hover:text-[#EAE4D9] transition-colors"
+                        >
+                          No
+                        </button>
+                      </div>
+                    )}
+                    {review.text && <p className="text-[#EAE4D9]/80 font-serif italic leading-relaxed">{review.text}</p>}
+                  </>
+                )}
               </div>
             ))
           )}

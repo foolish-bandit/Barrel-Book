@@ -1,7 +1,38 @@
-import { Heart, CheckCircle } from 'lucide-react';
+import { Heart, CheckCircle, Download } from 'lucide-react';
 import { Bourbon } from '../data';
 import { ViewState } from '../types';
 import ListCard from './ListCard';
+
+function formatBourbon(b: Bourbon): string {
+  return `- ${b.name} (${b.distillery}) — $${b.price} — ${b.proof} proof`;
+}
+
+function exportLists(wantBourbons: Bourbon[], triedBourbons: Bourbon[]) {
+  const lines = ['=== BARREL BOOK — MY LISTS ===', ''];
+  lines.push('WANT TO TRY:');
+  if (wantBourbons.length === 0) {
+    lines.push('(none)');
+  } else {
+    wantBourbons.forEach(b => lines.push(formatBourbon(b)));
+  }
+  lines.push('');
+  lines.push('TRIED:');
+  if (triedBourbons.length === 0) {
+    lines.push('(none)');
+  } else {
+    triedBourbons.forEach(b => lines.push(formatBourbon(b)));
+  }
+  lines.push('');
+  lines.push(`Exported from Barrel Book on ${new Date().toLocaleDateString()}`);
+
+  const blob = new Blob([lines.join('\n')], { type: 'text/plain' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'barrel-book-lists.txt';
+  a.click();
+  URL.revokeObjectURL(url);
+}
 
 interface ListsViewProps {
   wantToTry: string[];
@@ -20,6 +51,15 @@ export default function ListsView({ wantToTry, tried, onSelect, onNavigate, bour
       <div className="text-center space-y-4 py-8">
         <h1 className="font-serif text-4xl md:text-5xl font-normal text-[#EAE4D9]">My Barrel Book</h1>
         <p className="text-[#EAE4D9]/60 font-serif italic max-w-2xl mx-auto text-lg">Track your whiskey journey.</p>
+        {(wantBourbons.length > 0 || triedBourbons.length > 0) && (
+          <button
+            onClick={() => exportLists(wantBourbons, triedBourbons)}
+            className="inline-flex items-center gap-2 bg-transparent vintage-border hover:bg-[#C89B3C] hover:text-[#141210] hover:border-[#C89B3C] text-[#C89B3C] font-sans font-semibold tracking-widest uppercase text-xs px-6 py-2 transition-colors"
+          >
+            <Download size={14} />
+            Export Lists
+          </button>
+        )}
       </div>
 
       <div className="space-y-6">
