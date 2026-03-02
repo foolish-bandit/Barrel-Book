@@ -254,7 +254,7 @@ export default function App() {
         <div className="max-w-5xl mx-auto px-4 h-20 flex items-center justify-between">
           <div 
             className="flex items-center gap-3 cursor-pointer group"
-            onClick={() => navigateTo('catalog')}
+            onClick={() => navigateTo('home')}
           >
             <div className="w-10 h-10 rounded-full vintage-border flex items-center justify-center group-hover:border-[#C89B3C] transition-colors overflow-hidden p-1">
               <img src="/logo.svg" alt="Barrel Book Logo" className="w-full h-full object-contain" />
